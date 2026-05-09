@@ -1,0 +1,1 @@
+file deduplicator;duplicate files;sha256;file hashing;deduplication;cli tool;file management;parallel processing;recursive scan;disk space;dotnet;csharp
