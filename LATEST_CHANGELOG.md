@@ -2,5 +2,5 @@
 
 Changes since v1.0.31:
 
-- Bump ktsu.Extensions and 12 others ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- chore: update ktsu.Sdk to 2.21.1 [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
 
