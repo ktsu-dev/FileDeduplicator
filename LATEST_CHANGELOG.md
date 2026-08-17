@@ -1,6 +1,6 @@
-## v1.0.34 (patch)
+## v1.0.35 (patch)
 
-Changes since v1.0.33:
+Changes since v1.0.34:
 
-- Fix build errors from ktsu.Sdk analyzer update [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
