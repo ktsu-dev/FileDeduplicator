@@ -1,6 +1,6 @@
-## v1.0.35 (patch)
+## v1.0.36 (patch)
 
-Changes since v1.0.34:
+Changes since v1.0.35:
 
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Stop Update SDKs failing when there is nothing to update ([@matt-edmondson](https://github.com/matt-edmondson))
 
