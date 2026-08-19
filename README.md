@@ -2,6 +2,11 @@
 
 A command-line tool that finds and removes duplicate files recursively within a directory, keeping the copy with the shortest filename.
 
+[![License](https://img.shields.io/github/license/ktsu-dev/FileDeduplicator.svg?label=License&logo=nuget)](LICENSE.md)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ktsu-dev/FileDeduplicator?label=Commits&logo=github)](https://github.com/ktsu-dev/FileDeduplicator/commits/main)
+[![GitHub contributors](https://img.shields.io/github/contributors/ktsu-dev/FileDeduplicator?label=Contributors&logo=github)](https://github.com/ktsu-dev/FileDeduplicator/graphs/contributors)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ktsu-dev/FileDeduplicator/dotnet.yml?label=Build&logo=github)](https://github.com/ktsu-dev/FileDeduplicator/actions)
+
 ## How It Works
 
 1. Recursively scans all files in the specified directory

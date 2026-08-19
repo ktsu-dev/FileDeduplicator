@@ -1,3 +1,1 @@
-# FileDeduplicator
-
-A command-line tool that finds and removes duplicate files recursively within a directory, keeping the copy with the shortest filename.
+A command-line tool that finds and removes duplicate files recursively within a directory, keeping the copy with the shortest filename. Computes SHA256 hashes in parallel to group files by content, and offers scan, dry-run, statistics, and interactive deduplication commands so nothing is deleted without confirmation.
