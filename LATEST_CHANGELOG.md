@@ -1,6 +1,6 @@
-## v1.0.45 (patch)
+## v1.0.46 (patch)
 
-Changes since v1.0.44:
+Changes since v1.0.45:
 
-- ci: make the SonarQube quality gate opt in [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
