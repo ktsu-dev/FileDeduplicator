@@ -321,6 +321,35 @@ public sealed class DeduplicatorTests
 	}
 
 	/// <summary>
+	/// A path whose file was replaced by a directory of the same name cannot be re-read, so it
+	/// must be skipped. Attempting the delete instead would raise
+	/// <see cref="UnauthorizedAccessException"/>, which the delete path does not catch.
+	/// </summary>
+	[TestMethod]
+	public void APathReplacedByADirectoryIsSkippedRatherThanDeleted()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath keeper = tree.Write("a.txt", "shared");
+		AbsoluteFilePath replaced = tree.Write("bb.txt", "shared");
+		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(FileHasher.HashFiles([keeper, replaced]));
+
+		// Arrange -- during the confirmation pause the file becomes a directory of the same name
+		File.Delete(replaced.WeakString);
+		_ = Directory.CreateDirectory(replaced.WeakString);
+
+		// Act
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+
+		// Assert
+		Assert.AreEqual(0, result.DeletedCount);
+		Assert.ContainsSingle(result.SkippedFiles);
+		Assert.AreEqual(replaced, result.SkippedFiles[0].Path);
+		Assert.IsTrue(Directory.Exists(replaced.WeakString), "The directory now at that path must be left alone.");
+		Assert.IsTrue(TempTree.Exists(keeper), "The keeper must survive.");
+	}
+
+	/// <summary>
 	/// The re-verification must not degrade into skipping everything: untouched duplicates are
 	/// still deleted, and nothing is reported as preserved.
 	/// </summary>
