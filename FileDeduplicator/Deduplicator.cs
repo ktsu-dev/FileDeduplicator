@@ -53,21 +53,12 @@ internal static class Deduplicator
 			// whole group is left alone.
 			if (!StillMatchesGroup(keeper, group.Hash, out string? keeperReason))
 			{
-				foreach (AbsoluteFilePath file in group.Files.Where(f => f != keeper))
-				{
-					Skip(file, $"the copy being kept ({keeper}) {keeperReason}", skipped);
-				}
-
+				SkipWholeGroup(group, keeper, keeperReason, skipped);
 				continue;
 			}
 
-			foreach (AbsoluteFilePath file in group.Files)
+			foreach (AbsoluteFilePath file in group.Files.Where(f => f != keeper))
 			{
-				if (file == keeper)
-				{
-					continue;
-				}
-
 				// Re-hash immediately before deleting: a file that changed since the scan is no
 				// longer a duplicate, and deleting it would be irreversible loss of content that
 				// exists nowhere else.
@@ -95,6 +86,22 @@ internal static class Deduplicator
 		}
 
 		return new DeduplicationResult(deletedCount, bytesReclaimed, errors, skipped);
+	}
+
+	/// <summary>
+	/// Preserves every copy in a group, because the copy that would have been kept no longer
+	/// holds the group's content.
+	/// </summary>
+	/// <param name="group">The group to leave on disk.</param>
+	/// <param name="keeper">The copy that would have been kept.</param>
+	/// <param name="keeperReason">What the keeper did, phrased to follow its name.</param>
+	/// <param name="skipped">The list to record the preserved files on.</param>
+	private static void SkipWholeGroup(DuplicateGroup group, AbsoluteFilePath keeper, string? keeperReason, List<SkippedFile> skipped)
+	{
+		foreach (AbsoluteFilePath file in group.Files.Where(f => f != keeper))
+		{
+			Skip(file, $"the copy being kept ({keeper}) {keeperReason}", skipped);
+		}
 	}
 
 	/// <summary>
