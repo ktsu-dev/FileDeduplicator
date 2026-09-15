@@ -82,6 +82,16 @@ internal static class Deduplicator
 					errors.Add(error);
 					Console.WriteLine(error);
 				}
+				// A copy the process is not allowed to remove -- read-only on Windows, or in a
+				// write-protected directory on Unix -- must cost that one file, not the rest of the
+				// run. Letting this escape would abandon every group after it, with no summary and
+				// no report of what was already deleted.
+				catch (UnauthorizedAccessException ex)
+				{
+					string error = $"  Error deleting {file}: {ex.Message}";
+					errors.Add(error);
+					Console.WriteLine(error);
+				}
 			}
 		}
 
