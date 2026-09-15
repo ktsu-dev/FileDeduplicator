@@ -78,14 +78,34 @@ internal static class Deduplicator
 				}
 				catch (IOException ex)
 				{
-					string error = $"  Error deleting {file}: {ex.Message}";
-					errors.Add(error);
-					Console.WriteLine(error);
+					RecordDeleteFailure(file, ex, errors);
+				}
+				// A copy the process is not allowed to remove -- read-only on Windows, or in a
+				// write-protected directory on Unix -- must cost that one file, not the rest of the
+				// run. Letting this escape would abandon every group after it, with no summary and
+				// no report of what was already deleted.
+				catch (UnauthorizedAccessException ex)
+				{
+					RecordDeleteFailure(file, ex, errors);
 				}
 			}
 		}
 
 		return new DeduplicationResult(deletedCount, bytesReclaimed, errors, skipped);
+	}
+
+	/// <summary>
+	/// Records a copy that survived because it could not be removed, so the run can carry on and
+	/// still account for it at the end.
+	/// </summary>
+	/// <param name="file">The file that could not be deleted.</param>
+	/// <param name="ex">Why the delete was refused.</param>
+	/// <param name="errors">The list to record the failure on.</param>
+	private static void RecordDeleteFailure(AbsoluteFilePath file, Exception ex, List<string> errors)
+	{
+		string error = $"  Error deleting {file}: {ex.Message}";
+		errors.Add(error);
+		Console.WriteLine(error);
 	}
 
 	/// <summary>

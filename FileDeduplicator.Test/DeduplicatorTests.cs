@@ -323,7 +323,8 @@ public sealed class DeduplicatorTests
 	/// <summary>
 	/// A path whose file was replaced by a directory of the same name cannot be re-read, so it
 	/// must be skipped. Attempting the delete instead would raise
-	/// <see cref="UnauthorizedAccessException"/>, which the delete path does not catch.
+	/// <see cref="UnauthorizedAccessException"/> and report the directory as a failed deletion,
+	/// which says nothing about why the path was left alone.
 	/// </summary>
 	[TestMethod]
 	public void APathReplacedByADirectoryIsSkippedRatherThanDeleted()
@@ -373,6 +374,47 @@ public sealed class DeduplicatorTests
 		Assert.AreEqual(2, result.DeletedCount);
 		Assert.IsEmpty(result.SkippedFiles);
 		Assert.IsEmpty(result.Errors);
+	}
+
+	/// <summary>
+	/// A copy the process is not allowed to remove must cost that one file. It is reported as an
+	/// error, the group it belongs to carries on, and so does every group after it -- otherwise a
+	/// single read-only duplicate aborts a destructive run partway through, with files already
+	/// deleted and no summary saying which.
+	/// </summary>
+	[TestMethod]
+	public void ACopyThatCannotBeDeletedIsReportedAndTheRunCarriesOn()
+	{
+		// Arrange -- two groups, one of which holds a copy that cannot be removed
+		using TempTree tree = new();
+		AbsoluteFilePath keeper = tree.Write("a.txt", "shared");
+		AbsoluteFilePath undeletable = tree.Write("protected/bbb.txt", "shared");
+		AbsoluteFilePath otherKeeper = tree.Write("x.txt", "other content");
+		AbsoluteFilePath otherCopy = tree.Write("yy.txt", "other content");
+		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(FileHasher.HashFiles([keeper, undeletable, otherKeeper, otherCopy]));
+		Assert.HasCount(2, duplicates, "The two contents should form two separate groups.");
+
+		using DeletionBlock block = new(undeletable);
+
+		if (!block.IsEnforced)
+		{
+			Assert.Inconclusive("This process deletes through a write-protected directory, so the refusal under test cannot be staged. Run the tests as an unprivileged user.");
+		}
+
+		// Act
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+
+		// Assert -- the refusal is reported, not thrown
+		Assert.ContainsSingle(result.Errors);
+		Assert.Contains(undeletable.WeakString, result.Errors[0]);
+		Assert.IsTrue(TempTree.Exists(undeletable), "A copy that could not be deleted must still be on disk.");
+		Assert.IsEmpty(result.SkippedFiles, "The file was a genuine duplicate; it failed to delete rather than failing verification.");
+
+		// Assert -- the rest of the work still happened
+		Assert.AreEqual(1, result.DeletedCount);
+		Assert.IsFalse(TempTree.Exists(otherCopy), "An unrelated duplicate group must still be deduplicated.");
+		Assert.IsTrue(TempTree.Exists(keeper), "The keeper must survive.");
+		Assert.IsTrue(TempTree.Exists(otherKeeper), "The keeper must survive.");
 	}
 
 	/// <summary>
