@@ -1,7 +1,6 @@
-## v1.2.1 (patch)
+## v1.2.2 (patch)
 
-Changes since v1.2.0:
+Changes since v1.2.1:
 
-- refactor: keep the IOException catch body as it was [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- fix: catch UnauthorizedAccessException when deleting a duplicate [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
