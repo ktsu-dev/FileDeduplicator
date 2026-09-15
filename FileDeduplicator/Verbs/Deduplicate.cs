@@ -83,6 +83,16 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 		Console.WriteLine($"Deleted {result.DeletedCount} file(s).");
 		Console.WriteLine($"Reclaimed {FormatBytes(result.BytesReclaimed)} of disk space.");
 
+		if (result.SkippedFiles.Count > 0)
+		{
+			Console.WriteLine($"Preserved {result.SkippedFiles.Count} file(s) that could no longer be confirmed as duplicates:");
+
+			foreach (SkippedFile skipped in result.SkippedFiles)
+			{
+				Console.WriteLine($"  {skipped.Path} -- {skipped.Reason}");
+			}
+		}
+
 		if (result.Errors.Count > 0)
 		{
 			Console.WriteLine($"Encountered {result.Errors.Count} error(s) during deletion.");

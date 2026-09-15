@@ -233,6 +233,149 @@ public sealed class DeduplicatorTests
 	}
 
 	/// <summary>
+	/// Grouping happens before an interactive confirmation prompt of unbounded length, so a file
+	/// can stop being a duplicate before the delete pass runs. Such a file must be preserved and
+	/// reported, never deleted on the strength of the stale hash.
+	/// </summary>
+	[TestMethod]
+	public void AFileThatChangedAfterGroupingIsPreservedAndReported()
+	{
+		// Arrange -- three copies; a.txt is the keeper, bb.txt and ccc.txt are up for deletion
+		using TempTree tree = new();
+		AbsoluteFilePath keeper = tree.Write("a.txt", "shared");
+		AbsoluteFilePath changed = tree.Write("bb.txt", "shared");
+		AbsoluteFilePath stillDuplicate = tree.Write("ccc.txt", "shared");
+		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(FileHasher.HashFiles([keeper, changed, stillDuplicate]));
+
+		// Arrange -- bb.txt is rewritten during the confirmation pause, as a sync client or an
+		// editor autosave would do
+		_ = tree.Write("bb.txt", "no longer the same content");
+
+		// Act
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+
+		// Assert
+		Assert.IsTrue(TempTree.Exists(changed), "A file that is no longer a duplicate must not be deleted.");
+		Assert.IsTrue(TempTree.Exists(keeper), "The keeper must survive.");
+		Assert.IsFalse(TempTree.Exists(stillDuplicate), "A copy that is still identical should still be deleted.");
+		Assert.AreEqual(1, result.DeletedCount);
+		Assert.ContainsSingle(result.SkippedFiles);
+		Assert.AreEqual(changed, result.SkippedFiles[0].Path);
+		Assert.Contains("changed", result.SkippedFiles[0].Reason);
+		Assert.IsEmpty(result.Errors);
+	}
+
+	/// <summary>
+	/// If the copy being kept changed during the pause, deleting the rest would destroy the only
+	/// remaining copies of the grouped content, so the whole group must be left alone.
+	/// </summary>
+	[TestMethod]
+	public void AChangedKeeperPreservesTheWholeGroup()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath keeper = tree.Write("a.txt", "shared");
+		AbsoluteFilePath copyOne = tree.Write("bb.txt", "shared");
+		AbsoluteFilePath copyTwo = tree.Write("ccc.txt", "shared");
+		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(FileHasher.HashFiles([keeper, copyOne, copyTwo]));
+
+		// Arrange -- the keeper is rewritten during the confirmation pause
+		_ = tree.Write("a.txt", "the keeper was overwritten");
+
+		// Act
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+
+		// Assert
+		Assert.AreEqual(0, result.DeletedCount);
+		Assert.AreEqual(0, result.BytesReclaimed);
+		Assert.HasCount(2, result.SkippedFiles);
+		Assert.IsTrue(TempTree.Exists(copyOne), "The grouped content must survive somewhere.");
+		Assert.IsTrue(TempTree.Exists(copyTwo), "The grouped content must survive somewhere.");
+	}
+
+	/// <summary>
+	/// A file that disappears before the delete pass must be reported as skipped rather than
+	/// counted among the deletions, so the reclaimed total stays honest.
+	/// </summary>
+	[TestMethod]
+	public void AFileThatVanishedBeforeDeletionIsReportedNotCounted()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath keeper = tree.Write("a.txt", "shared");
+		AbsoluteFilePath vanishing = tree.Write("bb.txt", "shared");
+		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(FileHasher.HashFiles([keeper, vanishing]));
+
+		// Arrange -- something else removes it during the confirmation pause
+		File.Delete(vanishing.WeakString);
+
+		// Act
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+
+		// Assert
+		Assert.AreEqual(0, result.DeletedCount);
+		Assert.AreEqual(0, result.BytesReclaimed);
+		Assert.ContainsSingle(result.SkippedFiles);
+		Assert.AreEqual(vanishing, result.SkippedFiles[0].Path);
+		Assert.IsTrue(TempTree.Exists(keeper), "The keeper must survive.");
+	}
+
+	/// <summary>
+	/// A path whose file was replaced by a directory of the same name cannot be re-read, so it
+	/// must be skipped. Attempting the delete instead would raise
+	/// <see cref="UnauthorizedAccessException"/>, which the delete path does not catch.
+	/// </summary>
+	[TestMethod]
+	public void APathReplacedByADirectoryIsSkippedRatherThanDeleted()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath keeper = tree.Write("a.txt", "shared");
+		AbsoluteFilePath replaced = tree.Write("bb.txt", "shared");
+		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(FileHasher.HashFiles([keeper, replaced]));
+
+		// Arrange -- during the confirmation pause the file becomes a directory of the same name
+		File.Delete(replaced.WeakString);
+		_ = Directory.CreateDirectory(replaced.WeakString);
+
+		// Act
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+
+		// Assert
+		Assert.AreEqual(0, result.DeletedCount);
+		Assert.ContainsSingle(result.SkippedFiles);
+		Assert.AreEqual(replaced, result.SkippedFiles[0].Path);
+		Assert.IsTrue(Directory.Exists(replaced.WeakString), "The directory now at that path must be left alone.");
+		Assert.IsTrue(TempTree.Exists(keeper), "The keeper must survive.");
+	}
+
+	/// <summary>
+	/// The re-verification must not degrade into skipping everything: untouched duplicates are
+	/// still deleted, and nothing is reported as preserved.
+	/// </summary>
+	[TestMethod]
+	public void UntouchedDuplicatesAreDeletedWithNothingSkipped()
+	{
+		// Arrange
+		using TempTree tree = new();
+		Dictionary<AbsoluteFilePath, string> hashes = FileHasher.HashFiles(
+		[
+			tree.Write("a.txt", "shared"),
+			tree.Write("bb.txt", "shared"),
+			tree.Write("ccc.txt", "shared"),
+		]);
+		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(hashes);
+
+		// Act
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+
+		// Assert
+		Assert.AreEqual(2, result.DeletedCount);
+		Assert.IsEmpty(result.SkippedFiles);
+		Assert.IsEmpty(result.Errors);
+	}
+
+	/// <summary>
 	/// Deleting nothing must report nothing, rather than throwing on an empty group list.
 	/// </summary>
 	[TestMethod]
@@ -245,5 +388,6 @@ public sealed class DeduplicatorTests
 		Assert.AreEqual(0, result.DeletedCount);
 		Assert.AreEqual(0, result.BytesReclaimed);
 		Assert.IsEmpty(result.Errors);
+		Assert.IsEmpty(result.SkippedFiles);
 	}
 }
