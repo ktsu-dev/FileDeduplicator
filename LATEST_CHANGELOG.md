@@ -1,9 +1,7 @@
-## v1.2.0 (minor)
+## v1.2.1 (patch)
 
-Changes since v1.1.0:
+Changes since v1.2.0:
 
-- refactor: lift the keeper-mismatch path out of DeleteDuplicates [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- test: cover the unreadable-path branch of the pre-delete verification [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- fix: re-verify each file's hash before deleting it [minor] ([@matt-edmondson](https://github.com/matt-edmondson))
-- ci: adopt the consolidated .NET workflow [patch] ([@Claude](https://github.com/Claude))
+- refactor: keep the IOException catch body as it was [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- fix: catch UnauthorizedAccessException when deleting a duplicate [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
 
