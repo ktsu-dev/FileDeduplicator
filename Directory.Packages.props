@@ -5,9 +5,9 @@
   <ItemGroup>
     <PackageVersion Include="CommandLineParser" Version="2.9.1" />
     <PackageVersion Include="ConsoleTools" Version="1.2.1" />
-    <PackageVersion Include="ktsu.Extensions" Version="1.6.13" />
-    <PackageVersion Include="ktsu.Semantics.Strings" Version="5.4.1" />
-    <PackageVersion Include="ktsu.Semantics.Paths" Version="5.4.1" />
+    <PackageVersion Include="ktsu.Extensions" Version="1.6.14" />
+    <PackageVersion Include="ktsu.Semantics.Strings" Version="5.4.2" />
+    <PackageVersion Include="ktsu.Semantics.Paths" Version="5.4.2" />
     <PackageVersion Include="Polyfill" Version="11.3.0" />
     <PackageVersion Include="ConsoleTools.Controls" Version="1.2.1" />
     <PackageVersion Include="ConsoleTools.Controls.Menus" Version="1.2.1" />
