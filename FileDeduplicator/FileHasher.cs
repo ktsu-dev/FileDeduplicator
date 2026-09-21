@@ -32,14 +32,27 @@ internal static class FileHasher
 			}
 			catch (IOException ex)
 			{
-				lock (ConsoleLock)
-				{
-					Console.WriteLine($"  Error hashing {filePath.FileName}: {ex.Message}");
-				}
+				ReportSkipped(filePath, ex);
+			}
+			catch (UnauthorizedAccessException ex)
+			{
+				// Not an IOException, despite reading as one: a file the process is denied access to
+				// would otherwise escape this delegate, and Parallel.ForEach would surface it as an
+				// AggregateException that discards every hash the other threads had produced. This
+				// matches Deduplicator.StillMatchesGroup, which catches both for the same read.
+				ReportSkipped(filePath, ex);
 			}
 		});
 
 		return new Dictionary<AbsoluteFilePath, string>(results);
+	}
+
+	private static void ReportSkipped(AbsoluteFilePath filePath, Exception ex)
+	{
+		lock (ConsoleLock)
+		{
+			Console.WriteLine($"  Error hashing {filePath.FileName}: {ex.Message}");
+		}
 	}
 
 	internal static string ComputeHash(AbsoluteFilePath filePath)
