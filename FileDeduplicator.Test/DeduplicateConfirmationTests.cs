@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>
 /// Tests that the Deduplicate verb shows which copies it is about to delete before it asks for
-/// permission to delete them.
+/// permission to delete them, and that the answer it gets is the one it acts on.
 /// </summary>
 /// <remarks>
 /// The confirmation prompt is the only gate in front of an irreversible deletion, and "keep the
@@ -26,44 +26,18 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 [DoNotParallelize]
 public sealed class DeduplicateConfirmationTests
 {
-	/// <summary>
-	/// Runs the Deduplicate verb over a tree, answering "n" at the confirmation prompt, and
-	/// returns everything it wrote.
-	/// </summary>
-	/// <param name="root">The directory to deduplicate.</param>
-	/// <returns>The verb's console output.</returns>
-	private static string RunDeclining(AbsoluteDirectoryPath root)
+	private static string RunDeclining(AbsoluteDirectoryPath root) =>
+		ConsoleCapture.Normalize(ConsoleCapture.Run(new Deduplicate { PathString = root.WeakString }, "n"));
+
+	private static string RunConfirming(AbsoluteDirectoryPath root) =>
+		ConsoleCapture.Normalize(ConsoleCapture.Run(new Deduplicate { PathString = root.WeakString }, "y"));
+
+	private static string BeforeThePrompt(string output)
 	{
-		TextWriter originalOut = Console.Out;
-		TextReader originalIn = Console.In;
-
-		try
-		{
-			using StringWriter captured = new();
-			using StringReader answers = new("n");
-			Console.SetOut(captured);
-			Console.SetIn(answers);
-
-			Deduplicate verb = new() { PathString = root.WeakString };
-			verb.Run();
-
-			return captured.ToString();
-		}
-		finally
-		{
-			Console.SetOut(originalOut);
-			Console.SetIn(originalIn);
-		}
+		int prompt = output.IndexOf("Proceed with deletion?", StringComparison.Ordinal);
+		Assert.AreNotEqual(-1, prompt, $"The verb never reached the confirmation prompt. Output was:\n{output}");
+		return output[..prompt];
 	}
-
-	/// <summary>
-	/// Collapses runs of whitespace so the assertions describe the listing's content rather than
-	/// the column its markers happen to sit in.
-	/// </summary>
-	/// <param name="output">The captured console output.</param>
-	/// <returns>The output with each line trimmed and its internal whitespace collapsed.</returns>
-	private static string Normalize(string output) =>
-		string.Join('\n', output.Split('\n').Select(line => string.Join(' ', line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))));
 
 	/// <summary>
 	/// Every copy that would be deleted has to be named before the prompt, not after the deletion.
@@ -78,12 +52,9 @@ public sealed class DeduplicateConfirmationTests
 		AbsoluteFilePath alsoDoomed = tree.Write("archive/report-2026-backup.pdf", "the only copy that survives");
 
 		// Act
-		string output = Normalize(RunDeclining(tree.Root));
-		int prompt = output.IndexOf("Proceed with deletion?", StringComparison.Ordinal);
-		string beforePrompt = prompt < 0 ? string.Empty : output[..prompt];
+		string beforePrompt = BeforeThePrompt(RunDeclining(tree.Root));
 
 		// Assert
-		Assert.AreNotEqual(-1, prompt, $"The verb never reached the confirmation prompt. Output was:\n{output}");
 		Assert.Contains($"DELETE: {doomed}", beforePrompt, $"The prompt was shown without naming {doomed}. Output before it was:\n{beforePrompt}");
 		Assert.Contains($"DELETE: {alsoDoomed}", beforePrompt, $"The prompt was shown without naming {alsoDoomed}. Output before it was:\n{beforePrompt}");
 		Assert.Contains($"KEEP: {keeper}", beforePrompt, $"The prompt was shown without naming the copy being kept. Output before it was:\n{beforePrompt}");
@@ -109,14 +80,35 @@ public sealed class DeduplicateConfirmationTests
 		_ = tree.Write("group3/c.txt", "gamma");
 
 		// Act
-		string output = Normalize(RunDeclining(tree.Root));
-		string beforePrompt = output[..output.IndexOf("Proceed with deletion?", StringComparison.Ordinal)];
+		string beforePrompt = BeforeThePrompt(RunDeclining(tree.Root));
 
 		// Assert
 		foreach (AbsoluteFilePath file in doomed)
 		{
 			Assert.Contains($"DELETE: {file}", beforePrompt, $"{file} was not listed before the prompt.");
 		}
+	}
+
+	/// <summary>
+	/// The totals printed with the listing describe the same deletions the listing names.
+	/// </summary>
+	[TestMethod]
+	public void TheTotalsMatchTheListingShownAboveThem()
+	{
+		// Arrange -- two groups of two 5-byte files, so 2 deletions and 10 bytes
+		using TempTree tree = new();
+		_ = tree.Write("a.txt", "alpha");
+		_ = tree.Write("aa.txt", "alpha");
+		_ = tree.Write("b.txt", "bravo");
+		_ = tree.Write("bb.txt", "bravo");
+
+		// Act
+		string beforePrompt = BeforeThePrompt(RunDeclining(tree.Root));
+
+		// Assert
+		Assert.AreEqual(2, beforePrompt.Split("DELETE:").Length - 1, $"Expected two DELETE lines in:\n{beforePrompt}");
+		Assert.Contains("Files to delete: 2", beforePrompt);
+		Assert.Contains("Space to reclaim: 10 B", beforePrompt);
 	}
 
 	/// <summary>
@@ -146,5 +138,32 @@ public sealed class DeduplicateConfirmationTests
 		{
 			Assert.IsTrue(TempTree.Exists(file), $"{file} was deleted despite the confirmation being declined.");
 		}
+	}
+
+	/// <summary>
+	/// Confirming deletes exactly the copies the listing named, and no others -- the listing is a
+	/// promise about what the next step does, so it has to be kept.
+	/// </summary>
+	[TestMethod]
+	public void ConfirmingDeletesExactlyTheCopiesTheListingNamed()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath keeper = tree.Write("a.txt", "alpha");
+		AbsoluteFilePath doomed = tree.Write("aa.txt", "alpha");
+		AbsoluteFilePath unique = tree.Write("b.txt", "beta");
+
+		// Act
+		string output = RunConfirming(tree.Root);
+		string beforePrompt = BeforeThePrompt(output);
+
+		// Assert -- what the listing named is gone; what it did not name is not
+		Assert.Contains($"DELETE: {doomed}", beforePrompt);
+		Assert.IsFalse(TempTree.Exists(doomed), $"{doomed} was listed for deletion but survived.");
+		Assert.IsTrue(TempTree.Exists(keeper), $"{keeper} was listed as the kept copy but was deleted.");
+		Assert.IsTrue(TempTree.Exists(unique), $"{unique} has no duplicate and should never have been touched.");
+
+		Assert.Contains("Deleted 1 file(s).", output);
+		Assert.Contains("Reclaimed 5 B of disk space.", output);
 	}
 }

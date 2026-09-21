@@ -80,6 +80,21 @@ public sealed class DuplicateReportTests
 	}
 
 	/// <summary>
+	/// Sizes are rendered in the largest unit that leaves the number above one, so a listing of
+	/// large files does not ask the reader to count digits.
+	/// </summary>
+	/// <param name="bytes">The count to render.</param>
+	/// <param name="expected">What it should read as.</param>
+	[TestMethod]
+	[DataRow(0L, "0 B")]
+	[DataRow(1023L, "1023 B")]
+	[DataRow(1024L, "1.0 KB")]
+	[DataRow(1024L * 1024, "1.0 MB")]
+	[DataRow((1024L * 1024 * 1024) + (512L * 1024 * 1024), "1.5 GB")]
+	public void FormatBytesUsesTheLargestUnitThatFits(long bytes, string expected) =>
+		Assert.AreEqual(expected, DuplicateReport.FormatBytes(bytes));
+
+	/// <summary>
 	/// A run with nothing to delete produces nothing to read.
 	/// </summary>
 	[TestMethod]
