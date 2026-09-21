@@ -62,7 +62,7 @@ internal sealed class Stats : BaseVerb<Stats>
 		Console.WriteLine("=== FileDeduplicator Statistics ===");
 		Console.WriteLine();
 		Console.WriteLine($"Total files: {files.Count}");
-		Console.WriteLine($"Total size: {FormatBytes(totalSize)}");
+		Console.WriteLine($"Total size: {DuplicateReport.FormatBytes(totalSize)}");
 		Console.WriteLine($"Unique files: {uniqueFiles}");
 		Console.WriteLine($"Duplicate files: {duplicateFiles}");
 		Console.WriteLine($"Duplicate groups: {duplicates.Count}");
@@ -70,7 +70,7 @@ internal sealed class Stats : BaseVerb<Stats>
 		if (duplicates.Count > 0)
 		{
 			long wastedSpace = duplicates.Sum(g => g.FileSize * (g.Files.Count - 1));
-			Console.WriteLine($"Wasted space: {FormatBytes(wastedSpace)}");
+			Console.WriteLine($"Wasted space: {DuplicateReport.FormatBytes(wastedSpace)}");
 			Console.WriteLine();
 
 			// Extension breakdown
@@ -101,18 +101,10 @@ internal sealed class Stats : BaseVerb<Stats>
 			foreach (DuplicateGroup group in largestGroups)
 			{
 				long wasted = group.FileSize * (group.Files.Count - 1);
-				Console.WriteLine($"  {group.Hash[..12]}... - {group.Files.Count} copies, {FormatBytes(group.FileSize)} each, {FormatBytes(wasted)} wasted");
+				Console.WriteLine($"  {group.Hash[..12]}... - {group.Files.Count} copies, {DuplicateReport.FormatBytes(group.FileSize)} each, {DuplicateReport.FormatBytes(wasted)} wasted");
 			}
 		}
 
 		PathString = ".";
 	}
-
-	private static string FormatBytes(long bytes) => bytes switch
-	{
-		< 1024L => $"{bytes} B",
-		< 1024L * 1024 => $"{bytes / 1024.0:F1} KB",
-		< 1024L * 1024 * 1024 => $"{bytes / (1024.0 * 1024.0):F1} MB",
-		_ => $"{bytes / (1024.0 * 1024.0 * 1024.0):F1} GB",
-	};
 }
