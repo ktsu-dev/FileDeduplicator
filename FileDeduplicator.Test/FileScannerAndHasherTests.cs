@@ -67,6 +67,67 @@ public sealed class FileScannerAndHasherTests
 	}
 
 	/// <summary>
+	/// One unreadable directory must not abort the scan. Enumeration is lazy, so the refusal
+	/// arrives partway through the walk, after files elsewhere in the tree have already been found
+	/// and with the rest still to visit.
+	/// </summary>
+	[TestMethod]
+	public void ScanCarriesOnPastADirectoryItCannotRead()
+	{
+		// Arrange -- a readable file on either side of the unreadable directory in the walk
+		using TempTree tree = new();
+		AbsoluteFilePath top = tree.Write("top.txt", "a");
+		AbsoluteFilePath sibling = tree.Write("readable/mid.txt", "b");
+		_ = tree.Write("denied/hidden-from-the-scan.txt", "c");
+		string denied = Path.Combine(tree.Root.WeakString, "denied");
+
+		using DirectoryReadBlock block = new(denied);
+
+		if (!block.IsEnforced)
+		{
+			Assert.Inconclusive("This process lists directories it has no permission to read, so the refusal under test cannot be staged. Run the tests as an unprivileged user.");
+		}
+
+		// Act
+		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(tree.Root);
+
+		// Assert -- everything readable is still found, and the run did not throw
+		Assert.HasCount(2, files);
+		Assert.Contains(top, files);
+		Assert.Contains(sibling, files);
+	}
+
+	/// <summary>
+	/// A directory symlink pointing back at one of its own ancestors must not be followed. Build
+	/// caches and some backup layouts create these, and descending into one does not terminate.
+	/// </summary>
+	[TestMethod]
+	public void ScanTerminatesOnADirectorySymlinkCycle()
+	{
+		// Arrange -- a/b/loop -> a, so descending revisits a forever
+		using TempTree tree = new();
+		AbsoluteFilePath real = tree.Write("a/b/real.txt", "content");
+		string ancestor = Path.Combine(tree.Root.WeakString, "a");
+		string loop = Path.Combine(ancestor, "b", "loop");
+
+		try
+		{
+			_ = Directory.CreateSymbolicLink(loop, ancestor);
+		}
+		catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+		{
+			Assert.Inconclusive($"This process cannot create a directory symlink, so the cycle under test cannot be staged: {ex.Message}");
+		}
+
+		// Act -- hangs rather than returning if the link is followed
+		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(tree.Root);
+
+		// Assert -- the real file is found once, not once per lap around the cycle
+		Assert.ContainsSingle(files);
+		Assert.Contains(real, files);
+	}
+
+	/// <summary>
 	/// Identical content must hash identically regardless of the file's name or location.
 	/// </summary>
 	[TestMethod]
