@@ -10,6 +10,34 @@ using ktsu.Semantics.Strings;
 
 internal static class FileScanner
 {
+	/// <summary>
+	/// How the scan walks the tree.
+	/// </summary>
+	/// <remarks>
+	/// Replaces <see cref="SearchOption.AllDirectories"/>, which resolves to the legacy-compatible
+	/// options carrying <c>IgnoreInaccessible = false</c>. Enumeration is lazy, so the
+	/// <see cref="UnauthorizedAccessException"/> from one unreadable subdirectory surfaced partway
+	/// through the walk and abandoned the whole scan -- a restricted share or an OS-protected folder
+	/// anywhere under the root was enough.
+	/// <para>
+	/// <see cref="FileAttributes.ReparsePoint"/> is skipped so a directory symlink pointing at one of
+	/// its own ancestors cannot be descended into indefinitely. It skips linked files too, which
+	/// suits a deduplicator: a symlink is not a second copy, so deleting one reclaims nothing and
+	/// hashing through it would report content as duplicated with itself.
+	/// </para>
+	/// <para>
+	/// <see cref="FileAttributes.Hidden"/> and <see cref="FileAttributes.System"/> are deliberately
+	/// not skipped, which a bare <c>new EnumerationOptions()</c> would do. Those files were scanned
+	/// before this change, and a duplicate among them is still a duplicate.
+	/// </para>
+	/// </remarks>
+	private static readonly EnumerationOptions WalkOptions = new()
+	{
+		RecurseSubdirectories = true,
+		IgnoreInaccessible = true,
+		AttributesToSkip = FileAttributes.ReparsePoint,
+	};
+
 	internal static IReadOnlyList<AbsoluteFilePath> ScanForFiles(AbsoluteDirectoryPath path)
 	{
 		if (!path.Exists)
@@ -18,85 +46,12 @@ internal static class FileScanner
 			return [];
 		}
 
-		// Walked one directory at a time rather than with SearchOption.AllDirectories, which
-		// enumerates lazily: an UnauthorizedAccessException raised while descending into a single
-		// unreadable subdirectory propagates out of the loop and abandons the whole scan, however
-		// much of the tree was readable. Listing each directory on its own keeps a failure local to
-		// the directory that caused it, and lets the scan say which one it gave up on.
 		List<AbsoluteFilePath> files = [];
-		Queue<string> pending = new();
-		pending.Enqueue(path.WeakString);
-
-		while (pending.Count > 0)
+		foreach (string file in Directory.EnumerateFiles(path.WeakString, "*", WalkOptions))
 		{
-			string directory = pending.Dequeue();
-
-			foreach (string file in List(directory, Directory.EnumerateFiles))
-			{
-				files.Add(file.As<AbsoluteFilePath>());
-			}
-
-			foreach (string subdirectory in List(directory, Directory.EnumerateDirectories))
-			{
-				if (IsReparsePoint(subdirectory))
-				{
-					// A directory symlink or junction pointing at one of its own ancestors -- build
-					// caches and some backup layouts produce these -- would otherwise be descended
-					// into until the path stopped being legal. Skipping reparse points also stops
-					// content reachable by two routes being scanned, and reported as duplicated,
-					// twice.
-					Console.WriteLine($"  Skipped link: {subdirectory}");
-					continue;
-				}
-
-				pending.Enqueue(subdirectory);
-			}
+			files.Add(file.As<AbsoluteFilePath>());
 		}
 
 		return files;
-	}
-
-	/// <summary>
-	/// Lists one directory's entries, reporting and skipping it if it cannot be read.
-	/// </summary>
-	/// <remarks>
-	/// The result is materialized inside the guard on purpose. Both enumerators are lazy, so a
-	/// caller iterating one outside this method would see the exception raised on whichever element
-	/// triggered it, not here.
-	/// </remarks>
-	private static List<string> List(string directory, Func<string, IEnumerable<string>> enumerate)
-	{
-		try
-		{
-			return [.. enumerate(directory)];
-		}
-		catch (UnauthorizedAccessException ex)
-		{
-			Console.WriteLine($"  Skipped {directory}: {ex.Message}");
-			return [];
-		}
-		catch (IOException ex)
-		{
-			Console.WriteLine($"  Skipped {directory}: {ex.Message}");
-			return [];
-		}
-	}
-
-	private static bool IsReparsePoint(string directory)
-	{
-		try
-		{
-			return File.GetAttributes(directory).HasFlag(FileAttributes.ReparsePoint);
-		}
-		catch (UnauthorizedAccessException)
-		{
-			// Unreadable attributes are not grounds for following the link; the listing guard above
-			// reports the directory when the descent then fails to read it.
-			return true;
-		}
-		catch (IOException)
-		{
-			return true;
-		}
 	}
 }
