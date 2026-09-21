@@ -71,7 +71,7 @@ internal sealed class Scan : BaseVerb<Scan>
 			long wastedBytes = group.FileSize * (group.Files.Count - 1);
 			totalWastedBytes += wastedBytes;
 
-			Console.WriteLine($"  Hash: {group.Hash[..12]}... ({FormatBytes(group.FileSize)}, {group.Files.Count} copies)");
+			Console.WriteLine($"  Hash: {group.Hash[..12]}... ({DuplicateReport.FormatBytes(group.FileSize)}, {group.Files.Count} copies)");
 
 			foreach (AbsoluteFilePath file in group.Files)
 			{
@@ -83,18 +83,10 @@ internal sealed class Scan : BaseVerb<Scan>
 		}
 
 		Console.WriteLine($"Total duplicate groups: {duplicates.Count}");
-		Console.WriteLine($"Total wasted space: {FormatBytes(totalWastedBytes)}");
+		Console.WriteLine($"Total wasted space: {DuplicateReport.FormatBytes(totalWastedBytes)}");
 		Console.WriteLine();
 		Console.WriteLine("Run the 'Deduplicate' command to remove duplicates.");
 
 		PathString = ".";
 	}
-
-	private static string FormatBytes(long bytes) => bytes switch
-	{
-		< 1024L => $"{bytes} B",
-		< 1024L * 1024 => $"{bytes / 1024.0:F1} KB",
-		< 1024L * 1024 * 1024 => $"{bytes / (1024.0 * 1024.0):F1} MB",
-		_ => $"{bytes / (1024.0 * 1024.0 * 1024.0):F1} GB",
-	};
 }

@@ -60,11 +60,23 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 			return;
 		}
 
+		// Step 4: Show exactly which copies go and which one stays. "Shortest filename wins" is
+		// a blunt enough policy -- report-final-DO-NOT-DELETE.pdf loses to r.pdf -- that seeing
+		// the paths is the only way to catch a bad outcome while it is still reversible. Scan
+		// and DryRun already print this; the verb that actually deletes is the one that needs it.
+		DeletionPlan plan = DuplicateReport.PlanDeletions(duplicates);
+
 		Console.WriteLine($"Found {duplicates.Count} group(s) of duplicate files.");
 		Console.WriteLine("Keeping the copy with the shortest filename in each group.");
 		Console.WriteLine();
 
-		// Step 4: Confirm with user
+		DuplicateReport.WriteListing(plan.Listing);
+
+		Console.WriteLine($"Files to delete: {plan.FileCount}");
+		Console.WriteLine($"Space to reclaim: {DuplicateReport.FormatBytes(plan.BytesReclaimable)}");
+		Console.WriteLine();
+
+		// Step 5: Confirm with user
 		Console.Write("Proceed with deletion? (y/N): ");
 		string? confirmation = Console.ReadLine()?.Trim();
 		if (!string.Equals(confirmation, "y", StringComparison.OrdinalIgnoreCase))
@@ -75,13 +87,13 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 
 		Console.WriteLine();
 
-		// Step 5: Delete duplicates
+		// Step 6: Delete duplicates
 		Console.WriteLine("Deleting duplicates...");
 		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
 		Console.WriteLine();
 
 		Console.WriteLine($"Deleted {result.DeletedCount} file(s).");
-		Console.WriteLine($"Reclaimed {FormatBytes(result.BytesReclaimed)} of disk space.");
+		Console.WriteLine($"Reclaimed {DuplicateReport.FormatBytes(result.BytesReclaimed)} of disk space.");
 
 		if (result.SkippedFiles.Count > 0)
 		{
@@ -100,12 +112,4 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 
 		PathString = ".";
 	}
-
-	private static string FormatBytes(long bytes) => bytes switch
-	{
-		< 1024L => $"{bytes} B",
-		< 1024L * 1024 => $"{bytes / 1024.0:F1} KB",
-		< 1024L * 1024 * 1024 => $"{bytes / (1024.0 * 1024.0):F1} MB",
-		_ => $"{bytes / (1024.0 * 1024.0 * 1024.0):F1} GB",
-	};
 }

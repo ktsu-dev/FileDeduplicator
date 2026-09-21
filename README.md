@@ -76,7 +76,7 @@ Identical to Scan but formatted as a deletion preview with a summary of how many
 
 ### Deduplicate
 
-Performs the actual deduplication. After scanning and displaying results, prompts for confirmation (`y/N`) before deleting any files. Reports the number of files deleted and disk space reclaimed.
+Performs the actual deduplication. Prints the same per-group `KEEP`/`DELETE` listing DryRun does, so every path that is about to be removed is on screen before the confirmation (`y/N`) prompt is asked. Reports the number of files deleted and disk space reclaimed.
 
 ### Stats
 

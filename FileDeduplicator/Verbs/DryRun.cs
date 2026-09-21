@@ -60,47 +60,18 @@ internal sealed class DryRun : BaseVerb<DryRun>
 			return;
 		}
 
-		long totalReclaimable = 0;
-		int totalDeletions = 0;
+		DeletionPlan plan = DuplicateReport.PlanDeletions(duplicates);
 
 		Console.WriteLine($"Found {duplicates.Count} group(s) of duplicate files:");
 		Console.WriteLine();
 
-		foreach (DuplicateGroup group in duplicates)
-		{
-			AbsoluteFilePath keeper = Deduplicator.SelectFileToKeep(group.Files);
-
-			Console.WriteLine($"  Hash: {group.Hash[..12]}... ({FormatBytes(group.FileSize)}, {group.Files.Count} copies)");
-			Console.WriteLine($"    KEEP:   {keeper}");
-
-			foreach (AbsoluteFilePath file in group.Files)
-			{
-				if (file == keeper)
-				{
-					continue;
-				}
-
-				Console.WriteLine($"    DELETE: {file}");
-				totalDeletions++;
-				totalReclaimable += group.FileSize;
-			}
-
-			Console.WriteLine();
-		}
+		DuplicateReport.WriteListing(plan.Listing);
 
 		Console.WriteLine("--- Dry Run Summary ---");
 		Console.WriteLine($"Duplicate groups: {duplicates.Count}");
-		Console.WriteLine($"Files to delete: {totalDeletions}");
-		Console.WriteLine($"Space to reclaim: {FormatBytes(totalReclaimable)}");
+		Console.WriteLine($"Files to delete: {plan.FileCount}");
+		Console.WriteLine($"Space to reclaim: {DuplicateReport.FormatBytes(plan.BytesReclaimable)}");
 
 		PathString = ".";
 	}
-
-	private static string FormatBytes(long bytes) => bytes switch
-	{
-		< 1024L => $"{bytes} B",
-		< 1024L * 1024 => $"{bytes / 1024.0:F1} KB",
-		< 1024L * 1024 * 1024 => $"{bytes / (1024.0 * 1024.0):F1} MB",
-		_ => $"{bytes / (1024.0 * 1024.0 * 1024.0):F1} GB",
-	};
 }
