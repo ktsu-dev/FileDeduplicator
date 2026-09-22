@@ -164,4 +164,36 @@ public sealed class FileScannerAndHasherTests
 			Assert.AreEqual(FileHasher.ComputeHash(file), hashes[file]);
 		}
 	}
+
+	/// <summary>
+	/// One file the process cannot read must not take the whole hashing pass down with it. Hashing
+	/// runs under <c>Parallel.ForEach</c>, so an exception escaping the delegate surfaces as an
+	/// <see cref="AggregateException"/> and discards the results every other thread had already
+	/// produced.
+	/// </summary>
+	[TestMethod]
+	public void HashingSkipsAnUnreadableFileAndStillHashesTheRest()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath readable = tree.Write("readable.txt", "one");
+		AbsoluteFilePath alsoReadable = tree.Write("also-readable.txt", "two");
+
+		// A directory standing in for a file: File.OpenRead throws UnauthorizedAccessException for
+		// one on every platform and for every user. Denying permission on a real file would not --
+		// a privileged process, root or an elevated CI runner, reads it anyway -- so that
+		// arrangement would pass whether or not the exception is handled.
+		string deniedPath = Path.Combine(tree.Root.WeakString, "denied");
+		_ = Directory.CreateDirectory(deniedPath);
+		AbsoluteFilePath unreadable = deniedPath.As<AbsoluteFilePath>();
+
+		// Act
+		Dictionary<AbsoluteFilePath, string> hashes = FileHasher.HashFiles([readable, alsoReadable, unreadable]);
+
+		// Assert
+		Assert.HasCount(2, hashes);
+		Assert.AreEqual(FileHasher.ComputeHash(readable), hashes[readable]);
+		Assert.AreEqual(FileHasher.ComputeHash(alsoReadable), hashes[alsoReadable]);
+		Assert.IsFalse(hashes.ContainsKey(unreadable));
+	}
 }
