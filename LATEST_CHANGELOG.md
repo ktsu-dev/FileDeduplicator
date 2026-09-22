@@ -1,8 +1,6 @@
-## v1.3.3 (patch)
+## v1.3.4 (patch)
 
-Changes since v1.3.2:
+Changes since v1.3.3:
 
-- refactor: walk the scan with EnumerationOptions instead of a manual descent [patch] ([@Claude](https://github.com/Claude))
-- fix: survive an unreadable directory and a symlink cycle while scanning [patch] ([@Claude](https://github.com/Claude))
-- fix: skip a file the hashing pass cannot read instead of aborting [patch] ([@Claude](https://github.com/Claude))
+- Bump the ktsu group with 12 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
