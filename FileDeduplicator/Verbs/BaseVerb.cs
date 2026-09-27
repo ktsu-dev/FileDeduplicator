@@ -32,14 +32,24 @@ internal abstract class BaseVerb<T> : BaseVerb where T : BaseVerb<T>
 
 	public override void Run()
 	{
-		if (!ValidateArgs())
+		// The interactive menu runs the same instance every time its item is chosen, so the path is
+		// put back on every exit, early returns and exceptions included. Otherwise the next run skips
+		// the prompt and works on the previous directory.
+		try
 		{
-			return;
-		}
+			if (!ValidateArgs())
+			{
+				return;
+			}
 
-		isActive = false;
-		Run((T)this);
-		isActive = true;
+			isActive = false;
+			Run((T)this);
+		}
+		finally
+		{
+			isActive = true;
+			PathString = ".";
+		}
 	}
 
 	internal abstract void Run(T options);

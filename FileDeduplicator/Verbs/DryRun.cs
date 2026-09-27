@@ -71,7 +71,5 @@ internal sealed class DryRun : BaseVerb<DryRun>
 		Console.WriteLine($"Duplicate groups: {duplicates.Count}");
 		Console.WriteLine($"Files to delete: {plan.FileCount}");
 		Console.WriteLine($"Space to reclaim: {DuplicateReport.FormatBytes(plan.BytesReclaimable)}");
-
-		PathString = ".";
 	}
 }

@@ -104,7 +104,5 @@ internal sealed class Stats : BaseVerb<Stats>
 				Console.WriteLine($"  {group.Hash[..12]}... - {group.Files.Count} copies, {DuplicateReport.FormatBytes(group.FileSize)} each, {DuplicateReport.FormatBytes(wasted)} wasted");
 			}
 		}
-
-		PathString = ".";
 	}
 }
