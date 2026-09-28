@@ -30,6 +30,10 @@ internal static class FileScanner
 	/// not skipped, which a bare <c>new EnumerationOptions()</c> would do. Those files were scanned
 	/// before this change, and a duplicate among them is still a duplicate.
 	/// </para>
+	/// <para>
+	/// No attribute marks a named pipe, socket or device node, so <see cref="ScanForFiles"/> filters
+	/// those out itself through <see cref="FileType.IsRegularFile"/>.
+	/// </para>
 	/// </remarks>
 	private static readonly EnumerationOptions WalkOptions = new()
 	{
@@ -49,6 +53,13 @@ internal static class FileScanner
 		List<AbsoluteFilePath> files = [];
 		foreach (string file in Directory.EnumerateFiles(path.WeakString, "*", WalkOptions))
 		{
+			// On Unix the enumeration also yields named pipes, sockets and device nodes. Opening a
+			// pipe to hash it blocks until a writer appears, and none of them is a copy of anything.
+			if (!FileType.IsRegularFile(file))
+			{
+				continue;
+			}
+
 			files.Add(file.As<AbsoluteFilePath>());
 		}
 
