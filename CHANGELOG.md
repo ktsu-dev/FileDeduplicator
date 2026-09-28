@@ -1,3 +1,10 @@
+## v1.3.9-pre.1 (prerelease)
+
+Changes since v1.3.8:
+
+- Bump Polyfill from 11.4.0 to 11.4.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+
 ## v1.3.8 (patch)
 
 Changes since v1.3.7:
@@ -192,6 +199,7 @@ Changes since v1.0.0:
 - Stop Update SDKs failing when there is nothing to update ([@matt-edmondson](https://github.com/matt-edmondson))
 - Fix build errors from ktsu.Sdk analyzer update [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
 - chore: update ktsu.Sdk to 2.21.1 [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- chore: remove Microsoft.SourceLink.GitHub package version ([@matt-edmondson](https://github.com/matt-edmondson))
 - feat: add ConsoleTools dependencies to FileDeduplicator ([@matt-edmondson](https://github.com/matt-edmondson))
 
 ## v1.0.46 (patch)
@@ -463,6 +471,7 @@ Changes since v1.0.3:
 
 Changes since v1.0.2:
 
+- chore: remove Microsoft.SourceLink.GitHub package version ([@matt-edmondson](https://github.com/matt-edmondson))
 - feat: add ConsoleTools dependencies to FileDeduplicator ([@matt-edmondson](https://github.com/matt-edmondson))
 
 ## v1.0.2 (patch)
@@ -522,7 +531,9 @@ Changes since v1.0.1-pre.1:
 
 ## v1.0.1-pre.1 (prerelease)
 
-No significant changes detected since v1.0.1.
+Changes since v1.0.0:
+
+- Bump the microsoft group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
 ## v1.0.0
 

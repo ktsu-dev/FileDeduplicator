@@ -1,7 +1,7 @@
-## v1.3.8 (patch)
+## v1.3.9-pre.1 (prerelease)
 
-Changes since v1.3.7:
+Changes since v1.3.8:
 
-- fix: ask for a new path each time a menu verb runs [patch] ([@Claude](https://github.com/Claude))
-- fix: stop Stats counting files it could not hash as duplicates [patch] ([@Claude](https://github.com/Claude))
+- Bump Polyfill from 11.4.0 to 11.4.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
