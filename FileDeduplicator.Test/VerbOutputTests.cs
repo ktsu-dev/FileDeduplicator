@@ -122,6 +122,54 @@ public sealed class VerbOutputTests
 	}
 
 	/// <summary>
+	/// A file Stats cannot hash is reported as unreadable, not counted as a duplicate or in the size.
+	/// </summary>
+	/// <remarks>
+	/// Held open with <see cref="FileShare.None"/> rather than stripped of its permissions, because a
+	/// process running as root reads through permissions but .NET enforces the share lock on every
+	/// platform. Before ktsu-dev/FileDeduplicator#137 this tree reported one duplicate file and zero
+	/// duplicate groups.
+	/// </remarks>
+	[TestMethod]
+	public void StatsReportsAFileItCannotHashAsUnreadable()
+	{
+		// Arrange
+		using TempTree tree = new();
+		_ = tree.Write("a.txt", "alpha");
+		_ = tree.Write("b.txt", "beta");
+		AbsoluteFilePath locked = tree.Write("locked.txt", "gamma");
+		using FileStream holder = new(locked.WeakString, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+		// Act
+		string output = ConsoleCapture.Normalize(ConsoleCapture.Run(new Stats { PathString = tree.Root.WeakString }));
+
+		// Assert -- the two readable files are 9 B and unique
+		Assert.Contains("Total files: 3", output);
+		Assert.Contains("Unreadable files: 1", output);
+		Assert.Contains("Total size: 9 B", output);
+		Assert.Contains("Unique files: 2", output);
+		Assert.Contains("Duplicate files: 0", output);
+		Assert.Contains("Duplicate groups: 0", output);
+	}
+
+	/// <summary>
+	/// A tree where every file hashes has no unreadable line at all.
+	/// </summary>
+	[TestMethod]
+	public void StatsOmitsTheUnreadableLineWhenEveryFileHashes()
+	{
+		// Arrange
+		using TempTree tree = new();
+		WriteOneGroup(tree, out _, out _);
+
+		// Act
+		string output = ConsoleCapture.Normalize(ConsoleCapture.Run(new Stats { PathString = tree.Root.WeakString }));
+
+		// Assert
+		Assert.DoesNotContain("Unreadable files:", output);
+	}
+
+	/// <summary>
 	/// A tree with nothing duplicated says so, in every verb that looks for duplicates.
 	/// </summary>
 	[TestMethod]

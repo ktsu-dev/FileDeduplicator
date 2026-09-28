@@ -55,13 +55,22 @@ internal sealed class Stats : BaseVerb<Stats>
 		Dictionary<string, List<AbsoluteFilePath>> hashGroups = Deduplicator.GroupByHash(fileHashes);
 		IReadOnlyList<DuplicateGroup> duplicates = Deduplicator.FindDuplicates(hashGroups);
 
-		long totalSize = files.Sum(f => new FileInfo(f.WeakString).Length);
+		// Every count below is taken over the files that hashed. HashFiles drops a file it cannot
+		// read, so counting against the scanned list would report each one as a duplicate of nothing,
+		// and sizing it would throw if it had vanished since the scan.
+		long totalSize = fileHashes.Keys.Sum(f => new FileInfo(f.WeakString).Length);
 		int uniqueFiles = hashGroups.Count;
-		int duplicateFiles = files.Count - uniqueFiles;
+		int duplicateFiles = fileHashes.Count - uniqueFiles;
+		int unreadableFiles = files.Count - fileHashes.Count;
 
 		Console.WriteLine("=== FileDeduplicator Statistics ===");
 		Console.WriteLine();
 		Console.WriteLine($"Total files: {files.Count}");
+		if (unreadableFiles > 0)
+		{
+			Console.WriteLine($"Unreadable files: {unreadableFiles}");
+		}
+
 		Console.WriteLine($"Total size: {DuplicateReport.FormatBytes(totalSize)}");
 		Console.WriteLine($"Unique files: {uniqueFiles}");
 		Console.WriteLine($"Duplicate files: {duplicateFiles}");
