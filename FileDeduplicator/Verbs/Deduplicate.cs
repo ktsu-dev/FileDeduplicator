@@ -109,7 +109,5 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 		{
 			Console.WriteLine($"Encountered {result.Errors.Count} error(s) during deletion.");
 		}
-
-		PathString = ".";
 	}
 }

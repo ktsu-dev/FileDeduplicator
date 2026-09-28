@@ -86,7 +86,5 @@ internal sealed class Scan : BaseVerb<Scan>
 		Console.WriteLine($"Total wasted space: {DuplicateReport.FormatBytes(totalWastedBytes)}");
 		Console.WriteLine();
 		Console.WriteLine("Run the 'Deduplicate' command to remove duplicates.");
-
-		PathString = ".";
 	}
 }
