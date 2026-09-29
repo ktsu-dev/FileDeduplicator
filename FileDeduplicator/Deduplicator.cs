@@ -28,10 +28,71 @@ internal static class Deduplicator
 		return groups;
 	}
 
-	internal static IReadOnlyList<DuplicateGroup> FindDuplicates(Dictionary<string, List<AbsoluteFilePath>> hashGroups) =>
-		[.. hashGroups
-			.Where(kvp => kvp.Value.Count > 1)
-			.Select(kvp => new DuplicateGroup(kvp.Key, kvp.Value))];
+	/// <summary>
+	/// Builds the duplicate groups from the hash groups, sizing each from the copies still on disk.
+	/// </summary>
+	/// <remarks>
+	/// The hash pass can take minutes on a large tree, and the directories this is pointed at are
+	/// often live, so a file that hashed may be gone by now. A vanished copy is dropped rather than
+	/// allowed to abort the run, and a group it leaves with a single copy is no longer a group.
+	/// </remarks>
+	/// <param name="hashGroups">The files that hashed, grouped by hash.</param>
+	/// <returns>Every group that still has at least two copies.</returns>
+	internal static IReadOnlyList<DuplicateGroup> FindDuplicates(Dictionary<string, List<AbsoluteFilePath>> hashGroups)
+	{
+		List<DuplicateGroup> duplicates = [];
+
+		foreach (KeyValuePair<string, List<AbsoluteFilePath>> kvp in hashGroups.Where(kvp => kvp.Value.Count > 1))
+		{
+			// Each copy is sized exactly once, so the filter and the size it reports cannot disagree
+			// about a file that disappears between two reads.
+			(AbsoluteFilePath File, long Size)[] present = [.. kvp.Value
+				.Select(file => (File: file, Size: TryGetSize(file, out long size) ? size : (long?)null))
+				.Where(copy => copy.Size.HasValue)
+				.Select(copy => (copy.File, copy.Size!.Value))];
+
+			if (present.Length > 1)
+			{
+				duplicates.Add(new DuplicateGroup(kvp.Key, [.. present.Select(copy => copy.File)], present[0].Size));
+			}
+		}
+
+		return duplicates;
+	}
+
+	/// <summary>
+	/// Sums the sizes of the given files, counting nothing for one that is no longer there.
+	/// </summary>
+	/// <param name="files">The files to size.</param>
+	/// <returns>The total size in bytes of the files that could still be sized.</returns>
+	internal static long TotalSize(IEnumerable<AbsoluteFilePath> files) =>
+		files.Sum(file => TryGetSize(file, out long size) ? size : 0);
+
+	/// <summary>
+	/// Reads a file's size, tolerating a file that has disappeared or can no longer be reached.
+	/// </summary>
+	/// <param name="file">The file to size.</param>
+	/// <param name="size">The size in bytes, when it could be read.</param>
+	/// <returns><see langword="true"/> if the file is still there and its size was read.</returns>
+	private static bool TryGetSize(AbsoluteFilePath file, out long size)
+	{
+		try
+		{
+			size = new FileInfo(file.WeakString).Length;
+			return true;
+		}
+		catch (IOException)
+		{
+			// FileNotFoundException and DirectoryNotFoundException both derive from this.
+			size = 0;
+			return false;
+		}
+		catch (UnauthorizedAccessException)
+		{
+			size = 0;
+			return false;
+		}
+	}
 
 	internal static AbsoluteFilePath SelectFileToKeep(List<AbsoluteFilePath> duplicates) =>
 		duplicates.OrderBy(f => f.FileName.WeakString.Length).ThenBy(f => f.WeakString, StringComparer.Ordinal).First();
@@ -155,11 +216,11 @@ internal static class Deduplicator
 	}
 }
 
-internal sealed class DuplicateGroup(string hash, List<AbsoluteFilePath> files)
+internal sealed class DuplicateGroup(string hash, List<AbsoluteFilePath> files, long fileSize)
 {
 	internal string Hash { get; } = hash;
 	internal List<AbsoluteFilePath> Files { get; } = files;
-	internal long FileSize { get; } = new FileInfo(files[0].WeakString).Length;
+	internal long FileSize { get; } = fileSize;
 }
 
 internal sealed class DeduplicationResult(int deletedCount, long bytesReclaimed, List<string> errors, List<SkippedFile> skippedFiles)

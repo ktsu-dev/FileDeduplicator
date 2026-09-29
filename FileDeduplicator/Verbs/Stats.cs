@@ -58,7 +58,7 @@ internal sealed class Stats : BaseVerb<Stats>
 		// Every count below is taken over the files that hashed. HashFiles drops a file it cannot
 		// read, so counting against the scanned list would report each one as a duplicate of nothing,
 		// and sizing it would throw if it had vanished since the scan.
-		long totalSize = fileHashes.Keys.Sum(f => new FileInfo(f.WeakString).Length);
+		long totalSize = Deduplicator.TotalSize(fileHashes.Keys);
 		int uniqueFiles = hashGroups.Count;
 		int duplicateFiles = fileHashes.Count - uniqueFiles;
 		int unreadableFiles = files.Count - fileHashes.Count;
