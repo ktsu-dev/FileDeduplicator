@@ -44,21 +44,16 @@ internal static class Deduplicator
 
 		foreach (KeyValuePair<string, List<AbsoluteFilePath>> kvp in hashGroups.Where(kvp => kvp.Value.Count > 1))
 		{
-			List<AbsoluteFilePath> present = [];
-			long fileSize = 0;
+			// Each copy is sized exactly once, so the filter and the size it reports cannot disagree
+			// about a file that disappears between two reads.
+			(AbsoluteFilePath File, long Size)[] present = [.. kvp.Value
+				.Select(file => (File: file, Size: TryGetSize(file, out long size) ? size : (long?)null))
+				.Where(copy => copy.Size.HasValue)
+				.Select(copy => (copy.File, copy.Size!.Value))];
 
-			foreach (AbsoluteFilePath file in kvp.Value)
+			if (present.Length > 1)
 			{
-				if (TryGetSize(file, out long size))
-				{
-					present.Add(file);
-					fileSize = size;
-				}
-			}
-
-			if (present.Count > 1)
-			{
-				duplicates.Add(new DuplicateGroup(kvp.Key, present, fileSize));
+				duplicates.Add(new DuplicateGroup(kvp.Key, [.. present.Select(copy => copy.File)], present[0].Size));
 			}
 		}
 
