@@ -8,6 +8,8 @@
     <TargetFrameworks></TargetFrameworks>
     <NoWarn>$(NoWarn);CA1812</NoWarn>
     <!-- CA1812: Avoid uninstantiated internal classes - verb classes are instantiated via reflection -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- AllowUnsafeBlocks: the LibraryImport in FileType generates unsafe marshalling code -->
   </PropertyGroup>
 
   <ItemGroup>

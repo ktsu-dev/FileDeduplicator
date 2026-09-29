@@ -2,6 +2,8 @@
 
 namespace ktsu.FileDeduplicator.Test;
 
+using System.Diagnostics;
+
 using ktsu.Semantics.Paths;
 using ktsu.Semantics.Strings;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -125,6 +127,50 @@ public sealed class FileScannerAndHasherTests
 		// Assert -- the real file is found once, not once per lap around the cycle
 		Assert.ContainsSingle(files);
 		Assert.Contains(real, files);
+	}
+
+	/// <summary>
+	/// A named pipe must not reach the hasher. Opening one for reading blocks until a writer
+	/// appears, so a single pipe anywhere in the tree hung every verb.
+	/// </summary>
+	[TestMethod]
+	public void ScanLeavesOutANamedPipe()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath regular = tree.Write("regular.txt", "content");
+		AbsoluteFilePath empty = tree.Write("nested/empty.txt", string.Empty);
+		MakeNamedPipe(Path.Combine(tree.Root.WeakString, "nested", "pipe"));
+
+		// Act
+		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(tree.Root);
+
+		// Assert -- regular files, including an empty one, are still found
+		Assert.HasCount(2, files);
+		Assert.Contains(regular, files);
+		Assert.Contains(empty, files);
+	}
+
+	/// <summary>
+	/// Scanning and hashing a tree that holds a named pipe must finish, which is what the user sees
+	/// of the fix. A hang fails the test after a timeout rather than stalling the run.
+	/// </summary>
+	[TestMethod]
+	public void ScanAndHashFinishWhenTheTreeHoldsANamedPipe()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath regular = tree.Write("a.txt", "a");
+		MakeNamedPipe(Path.Combine(tree.Root.WeakString, "pipe"));
+
+		// Act
+		Task<Dictionary<AbsoluteFilePath, string>> pass = Task.Run(() => FileHasher.HashFiles(FileScanner.ScanForFiles(tree.Root)));
+		bool finished = pass.Wait(TimeSpan.FromSeconds(30));
+
+		// Assert
+		Assert.IsTrue(finished, "Scanning and hashing did not finish, so the named pipe was opened.");
+		Assert.ContainsSingle(pass.Result);
+		Assert.IsTrue(pass.Result.ContainsKey(regular));
 	}
 
 	/// <summary>
@@ -256,5 +302,21 @@ public sealed class FileScannerAndHasherTests
 		Assert.AreEqual(FileHasher.ComputeHash(readable), hashes[readable]);
 		Assert.AreEqual(FileHasher.ComputeHash(alsoReadable), hashes[alsoReadable]);
 		Assert.IsFalse(hashes.ContainsKey(unreadable));
+	}
+
+	/// <summary>
+	/// Creates a named pipe with <c>mkfifo</c>, or marks the test inconclusive where there is none.
+	/// </summary>
+	/// <param name="path">Where to create the pipe.</param>
+	private static void MakeNamedPipe(string path)
+	{
+		if (OperatingSystem.IsWindows())
+		{
+			Assert.Inconclusive("Windows keeps named pipes out of the file system, so there is nothing to stage.");
+		}
+
+		using Process mkfifo = Process.Start("mkfifo", [path]);
+		mkfifo.WaitForExit();
+		Assert.AreEqual(0, mkfifo.ExitCode, $"mkfifo could not create {path}.");
 	}
 }
