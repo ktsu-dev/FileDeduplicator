@@ -432,4 +432,73 @@ public sealed class DeduplicatorTests
 		Assert.IsEmpty(result.Errors);
 		Assert.IsEmpty(result.SkippedFiles);
 	}
+
+	/// <summary>
+	/// A copy removed between the hash pass and grouping must not abort the run: the grouping
+	/// has to go on without it and still report the copies that remain.
+	/// </summary>
+	[TestMethod]
+	public void ACopyThatVanishedAfterHashingIsDroppedFromItsGroup()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath first = tree.Write("a.txt", "shared");
+		AbsoluteFilePath second = tree.Write("bb.txt", "shared");
+		AbsoluteFilePath vanishing = tree.Write("ccc.txt", "shared");
+		Dictionary<AbsoluteFilePath, string> hashes = FileHasher.HashFiles([first, second, vanishing]);
+
+		// Arrange -- something else removes it while the rest of a long hash pass runs
+		File.Delete(vanishing.WeakString);
+
+		// Act
+		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(hashes);
+
+		// Assert
+		Assert.ContainsSingle(duplicates);
+		CollectionAssert.AreEquivalent(new[] { first, second }, duplicates[0].Files);
+		Assert.AreEqual("shared".Length, duplicates[0].FileSize);
+	}
+
+	/// <summary>
+	/// Whichever copy vanishes, including the one the group would have been sized from, a group
+	/// left with a single copy is no longer a duplicate group.
+	/// </summary>
+	/// <param name="vanishingIndex">Which of the two copies disappears.</param>
+	[TestMethod]
+	[DataRow(0)]
+	[DataRow(1)]
+	public void AGroupLeftWithOneCopyIsDropped(int vanishingIndex)
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath[] copies = [tree.Write("a.txt", "shared"), tree.Write("bb.txt", "shared")];
+		Dictionary<AbsoluteFilePath, string> hashes = FileHasher.HashFiles(copies);
+		File.Delete(copies[vanishingIndex].WeakString);
+
+		// Act
+		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(hashes);
+
+		// Assert
+		Assert.IsEmpty(duplicates);
+	}
+
+	/// <summary>
+	/// Stats sizes every file that hashed; one that has since disappeared contributes nothing
+	/// rather than aborting the report.
+	/// </summary>
+	[TestMethod]
+	public void TotalSizeSkipsAFileThatVanishedAfterHashing()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath kept = tree.Write("a.txt", "four");
+		AbsoluteFilePath vanishing = tree.Write("c.txt", "unrelated");
+		File.Delete(vanishing.WeakString);
+
+		// Act
+		long total = Deduplicator.TotalSize([kept, vanishing]);
+
+		// Assert
+		Assert.AreEqual("four".Length, total);
+	}
 }
