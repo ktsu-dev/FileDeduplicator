@@ -1,6 +1,6 @@
-## v1.3.9 (patch)
+## v1.3.10 (patch)
 
-Changes since v1.3.8:
+Changes since v1.3.9:
 
-- fix: skip named pipes, sockets and device nodes when scanning [patch] ([@Claude](https://github.com/Claude))
+- Move CI onto the shared ci-shared.yml pipeline ([@Claude](https://github.com/Claude))
 
