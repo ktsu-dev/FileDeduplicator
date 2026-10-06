@@ -82,6 +82,7 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 		if (!string.Equals(confirmation, "y", StringComparison.OrdinalIgnoreCase))
 		{
 			Console.WriteLine("Aborted.");
+			ExitCode = 1;
 			return;
 		}
 
@@ -108,6 +109,7 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 		if (result.Errors.Count > 0)
 		{
 			Console.WriteLine($"Encountered {result.Errors.Count} error(s) during deletion.");
+			ExitCode = 1;
 		}
 	}
 }

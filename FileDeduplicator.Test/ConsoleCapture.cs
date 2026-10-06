@@ -8,7 +8,7 @@ using ktsu.FileDeduplicator.Verbs;
 /// Runs a verb with the console redirected, and hands back everything it wrote.
 /// </summary>
 /// <remarks>
-/// The verbs have no return value and no output abstraction -- what they do is what they print --
+/// The verbs return only an exit code and have no output abstraction -- what they do is what they print --
 /// so the console is the only surface a test can assert against. Redirecting it is global state,
 /// which is why every class using this is marked <c>[DoNotParallelize]</c>.
 /// </remarks>
@@ -20,7 +20,26 @@ internal static class ConsoleCapture
 	/// <param name="verb">The verb to run.</param>
 	/// <param name="stdin">Lines the verb's prompts will read, or nothing.</param>
 	/// <returns>Everything the verb wrote to the console.</returns>
-	internal static string Run(BaseVerb verb, string stdin = "")
+	internal static string Run(BaseVerb verb, string stdin = "") => Run(verb, stdin, out _);
+
+	/// <summary>
+	/// Runs a verb, feeding it the given answers on stdin, and hands back its exit code too.
+	/// </summary>
+	/// <param name="verb">The verb to run.</param>
+	/// <param name="stdin">Lines the verb's prompts will read, or nothing.</param>
+	/// <param name="exitCode">The exit code the verb returned.</param>
+	/// <returns>Everything the verb wrote to the console.</returns>
+	internal static string Run(BaseVerb verb, string stdin, out int exitCode) =>
+		Run(_ => verb.Run(), stdin, out exitCode);
+
+	/// <summary>
+	/// Runs an action that returns an exit code, feeding it the given answers on stdin.
+	/// </summary>
+	/// <param name="action">The action to run. It is handed the writer standing in for the console.</param>
+	/// <param name="stdin">Lines the action's prompts will read, or nothing.</param>
+	/// <param name="exitCode">The exit code the action returned.</param>
+	/// <returns>Everything the action wrote to the console.</returns>
+	internal static string Run(Func<TextWriter, int> action, string stdin, out int exitCode)
 	{
 		TextWriter originalOut = Console.Out;
 		TextReader originalIn = Console.In;
@@ -32,7 +51,7 @@ internal static class ConsoleCapture
 			Console.SetOut(captured);
 			Console.SetIn(answers);
 
-			verb.Run();
+			exitCode = action(captured);
 
 			return captured.ToString();
 		}

@@ -42,7 +42,13 @@ internal static class FileScanner
 		AttributesToSkip = FileAttributes.ReparsePoint,
 	};
 
-	internal static IReadOnlyList<AbsoluteFilePath> ScanForFiles(AbsoluteDirectoryPath path)
+	/// <summary>
+	/// Checks that <paramref name="path"/> is a directory that can be scanned, and says why in one
+	/// line when it is not.
+	/// </summary>
+	/// <param name="path">The root to check.</param>
+	/// <returns><see langword="false"/> when the root is missing or is not a directory.</returns>
+	internal static bool IsScannableDirectory(AbsoluteDirectoryPath path)
 	{
 		// path.Exists is also true for a file, which Directory.EnumerateFiles then rejects with an
 		// unhandled DirectoryNotFoundException. A path tab-completed one level too far is an easy
@@ -50,12 +56,22 @@ internal static class FileScanner
 		if (File.Exists(path.WeakString))
 		{
 			Console.WriteLine($"Not a directory: {path}");
-			return [];
+			return false;
 		}
 
 		if (!Directory.Exists(path.WeakString))
 		{
 			Console.WriteLine($"Directory not found: {path}");
+			return false;
+		}
+
+		return true;
+	}
+
+	internal static IReadOnlyList<AbsoluteFilePath> ScanForFiles(AbsoluteDirectoryPath path)
+	{
+		if (!IsScannableDirectory(path))
+		{
 			return [];
 		}
 
