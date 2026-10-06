@@ -58,6 +58,8 @@ FileDeduplicator Stats -p "C:\path\to\directory"
 
 When duplicates are found, the file with the **shortest filename** is kept. If two files have filenames of equal length, the one with the lexicographically first full path is kept.
 
+Empty files are reported as a group but never deleted. Deleting one frees nothing, and an empty file such as `__init__.py`, `.gitkeep` or `py.typed` usually matters because it exists.
+
 For example, given these duplicates:
 - `C:\photos\vacation\IMG_20240101_123456.jpg`
 - `C:\photos\beach.jpg`

@@ -31,7 +31,7 @@ public sealed class DryRunEquivalenceTests
 	{
 		HashSet<AbsoluteFilePath> predicted = [];
 
-		foreach (DuplicateGroup group in duplicates)
+		foreach (DuplicateGroup group in duplicates.Where(Deduplicator.IsDeletable))
 		{
 			AbsoluteFilePath keeper = Deduplicator.SelectFileToKeep(group.Files);
 			foreach (AbsoluteFilePath file in group.Files.Where(f => f != keeper))

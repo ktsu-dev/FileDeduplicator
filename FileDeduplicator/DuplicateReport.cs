@@ -31,9 +31,21 @@ internal static class DuplicateReport
 
 		foreach (DuplicateGroup group in duplicates)
 		{
-			AbsoluteFilePath keeper = Deduplicator.SelectFileToKeep(group.Files);
-
 			listing.Add($"  Hash: {group.Hash[..12]}... ({FormatBytes(group.FileSize)}, {group.Files.Count} copies)");
+
+			if (!Deduplicator.IsDeletable(group))
+			{
+				listing.Add("    Empty files are never deleted:");
+				foreach (AbsoluteFilePath file in group.Files)
+				{
+					listing.Add($"    KEEP:   {file}");
+				}
+
+				listing.Add(string.Empty);
+				continue;
+			}
+
+			AbsoluteFilePath keeper = Deduplicator.SelectFileToKeep(group.Files);
 			listing.Add($"    KEEP:   {keeper}");
 
 			foreach (AbsoluteFilePath file in group.Files)
