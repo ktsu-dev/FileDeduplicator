@@ -76,7 +76,12 @@ internal sealed class Scan : BaseVerb<Scan>
 
 			foreach (AbsoluteFilePath file in group.Files)
 			{
-				string marker = !deletable ? " [KEEP, empty]" : file == keeper ? " [KEEP]" : " [DELETE]";
+				string marker = (deletable, file == keeper) switch
+				{
+					(false, _) => " [KEEP, empty]",
+					(true, true) => " [KEEP]",
+					(true, false) => " [DELETE]",
+				};
 				Console.WriteLine($"    {file}{marker}");
 			}
 

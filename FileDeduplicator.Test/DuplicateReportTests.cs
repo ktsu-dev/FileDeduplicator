@@ -62,7 +62,7 @@ public sealed class DuplicateReportTests
 		// Assert
 		Assert.AreEqual(0, plan.FileCount);
 		Assert.AreEqual(0, plan.BytesReclaimable);
-		Assert.IsFalse(plan.Listing.Any(line => line.Contains("DELETE:", StringComparison.Ordinal)), "No empty file may be listed for deletion.");
+		Assert.DoesNotContain(line => line.Contains("DELETE:", StringComparison.Ordinal), plan.Listing, "No empty file may be listed for deletion.");
 		Assert.AreEqual(3, plan.Listing.Count(line => line.Contains("KEEP:", StringComparison.Ordinal)));
 	}
 
