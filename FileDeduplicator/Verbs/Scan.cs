@@ -13,7 +13,7 @@ internal sealed class Scan : BaseVerb<Scan>
 {
 	internal override bool ValidateArgs()
 	{
-		if (PathString is "." or "")
+		if (string.IsNullOrWhiteSpace(PathString))
 		{
 			Console.Write("Enter the path to scan: ");
 			string? input = Console.ReadLine()?.Trim();
