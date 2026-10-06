@@ -14,7 +14,7 @@ internal sealed class Stats : BaseVerb<Stats>
 {
 	internal override bool ValidateArgs()
 	{
-		if (PathString is "." or "")
+		if (string.IsNullOrWhiteSpace(PathString))
 		{
 			Console.Write("Enter the path to analyze: ");
 			string? input = Console.ReadLine()?.Trim();
