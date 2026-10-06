@@ -208,6 +208,34 @@ public sealed class DeduplicatorTests
 	}
 
 	/// <summary>
+	/// Empty files group together, but deleting one frees nothing and an empty <c>__init__.py</c>
+	/// or <c>.gitkeep</c> matters because it exists, so only the real duplicate is deleted.
+	/// </summary>
+	[TestMethod]
+	public void EmptyFilesAreNeverDeleted()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath initA = tree.Write("a/__init__.py", string.Empty);
+		AbsoluteFilePath initB = tree.Write("b/__init__.py", string.Empty);
+		AbsoluteFilePath copy = tree.Write("copy.txt", "shared");
+		AbsoluteFilePath keeper = tree.Write("k.txt", "shared");
+		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(FileHasher.HashFiles([initA, initB, copy, keeper]));
+
+		// Act
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+
+		// Assert
+		Assert.HasCount(2, duplicates, "The empty files are still reported as a group.");
+		Assert.AreEqual(1, result.DeletedCount);
+		Assert.IsTrue(TempTree.Exists(initA), "An empty file must survive.");
+		Assert.IsTrue(TempTree.Exists(initB), "An empty file must survive.");
+		Assert.IsTrue(TempTree.Exists(keeper), "The keeper must survive.");
+		Assert.IsFalse(TempTree.Exists(copy), "The real duplicate should have been deleted.");
+		Assert.IsEmpty(result.SkippedFiles);
+	}
+
+	/// <summary>
 	/// The reclaimed byte count must reflect what was actually removed.
 	/// </summary>
 	[TestMethod]

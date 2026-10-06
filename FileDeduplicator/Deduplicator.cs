@@ -97,6 +97,18 @@ internal static class Deduplicator
 	internal static AbsoluteFilePath SelectFileToKeep(List<AbsoluteFilePath> duplicates) =>
 		duplicates.OrderBy(f => f.FileName.WeakString.Length).ThenBy(f => f.WeakString, StringComparer.Ordinal).First();
 
+	/// <summary>
+	/// Reports whether deduplication may delete copies from a group.
+	/// </summary>
+	/// <remarks>
+	/// Every zero-length file hashes the same, so an empty <c>__init__.py</c>, a <c>.gitkeep</c> and a
+	/// <c>py.typed</c> marker land in one group. Such files matter because they exist, not for what
+	/// they hold, and deleting them frees nothing, so the group is still reported but never deleted.
+	/// </remarks>
+	/// <param name="group">The group to check.</param>
+	/// <returns><see langword="true"/> unless the group's files are empty.</returns>
+	internal static bool IsDeletable(DuplicateGroup group) => group.FileSize > 0;
+
 	internal static DeduplicationResult DeleteDuplicates(IReadOnlyList<DuplicateGroup> duplicateGroups)
 	{
 		int deletedCount = 0;
@@ -104,7 +116,7 @@ internal static class Deduplicator
 		List<string> errors = [];
 		List<SkippedFile> skipped = [];
 
-		foreach (DuplicateGroup group in duplicateGroups)
+		foreach (DuplicateGroup group in duplicateGroups.Where(IsDeletable))
 		{
 			AbsoluteFilePath keeper = SelectFileToKeep(group.Files);
 

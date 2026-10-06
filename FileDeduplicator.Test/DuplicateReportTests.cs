@@ -44,6 +44,29 @@ public sealed class DuplicateReportTests
 	}
 
 	/// <summary>
+	/// Empty files are never deleted, so the plan keeps all of them and counts none, matching what
+	/// Deduplicate then does.
+	/// </summary>
+	[TestMethod]
+	public void PlanKeepsEveryEmptyFile()
+	{
+		// Arrange
+		using TempTree tree = new();
+		_ = tree.Write("a/__init__.py", string.Empty);
+		_ = tree.Write("b/__init__.py", string.Empty);
+		_ = tree.Write("logs/.gitkeep", string.Empty);
+
+		// Act
+		DeletionPlan plan = DuplicateReport.PlanDeletions(DuplicatesIn(tree));
+
+		// Assert
+		Assert.AreEqual(0, plan.FileCount);
+		Assert.AreEqual(0, plan.BytesReclaimable);
+		Assert.DoesNotContain(line => line.Contains("DELETE:", StringComparison.Ordinal), plan.Listing, "No empty file may be listed for deletion.");
+		Assert.AreEqual(3, plan.Listing.Count(line => line.Contains("KEEP:", StringComparison.Ordinal)));
+	}
+
+	/// <summary>
 	/// The listing names one keeper and every other copy in each group, so the two sets together
 	/// account for every file the group holds.
 	/// </summary>

@@ -37,6 +37,35 @@ public sealed class VerbOutputTests
 	}
 
 	/// <summary>
+	/// Every verb given a file instead of a directory says so in one line and deletes nothing.
+	/// </summary>
+	[TestMethod]
+	public void EveryVerbReportsAFilePathAsNotADirectory()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath file = tree.Write("a/f.txt", "content");
+		string path = file.WeakString;
+
+		// Act
+		string[] outputs =
+		[
+			ConsoleCapture.Run(new Scan { PathString = path }),
+			ConsoleCapture.Run(new DryRun { PathString = path }),
+			ConsoleCapture.Run(new Stats { PathString = path }),
+			ConsoleCapture.Run(new Deduplicate { PathString = path }, "y"),
+		];
+
+		// Assert
+		foreach (string output in outputs)
+		{
+			Assert.Contains($"Not a directory: {path}", output);
+		}
+
+		Assert.IsTrue(TempTree.Exists(file), "The file named as the root must be left alone.");
+	}
+
+	/// <summary>
 	/// DryRun names the keeper and every other copy, totals them, and deletes nothing.
 	/// </summary>
 	[TestMethod]
@@ -175,6 +204,26 @@ public sealed class VerbOutputTests
 			Assert.Contains("Duplicate files by extension:\n.bak: 1 file(s)\n.png: 1 file(s)\n", output);
 			Assert.DoesNotContain(".jpg:", output);
 		}
+	}
+
+	/// <summary>
+	/// A file that cannot be hashed is named by its full path, so the failing copy can be found
+	/// among others sharing its file name.
+	/// </summary>
+	[TestMethod]
+	public void AHashingErrorNamesTheFullPath()
+	{
+		// Arrange
+		using TempTree tree = new();
+		_ = tree.Write("one/IMG_0001.jpg", "alpha");
+		AbsoluteFilePath locked = tree.Write("two/IMG_0001.jpg", "beta");
+		using FileStream holder = new(locked.WeakString, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+		// Act
+		string output = ConsoleCapture.Run(new Stats { PathString = tree.Root.WeakString });
+
+		// Assert
+		Assert.Contains($"Error hashing {locked}:", output);
 	}
 
 	/// <summary>
