@@ -82,22 +82,30 @@ internal sealed class Stats : BaseVerb<Stats>
 			Console.WriteLine($"Wasted space: {DuplicateReport.FormatBytes(wastedSpace)}");
 			Console.WriteLine();
 
-			// Extension breakdown
+			// Extension breakdown. Each redundant copy is counted under its own extension, and the
+			// copy that would be kept is left out, so the breakdown sums to "Duplicate files" above.
+			// Crediting a whole group to Files[0] counted the keeper too, and picked whichever copy
+			// the parallel hash happened to list first, so the same tree reported a different
+			// extension from run to run.
 			Dictionary<string, int> extensionCounts = [];
 			foreach (DuplicateGroup group in duplicates)
 			{
-				string ext = System.IO.Path.GetExtension(group.Files[0].WeakString);
-				if (string.IsNullOrEmpty(ext))
+				AbsoluteFilePath keeper = Deduplicator.SelectFileToKeep(group.Files);
+				foreach (AbsoluteFilePath file in group.Files.Where(f => f != keeper))
 				{
-					ext = "(no extension)";
-				}
+					string ext = System.IO.Path.GetExtension(file.WeakString);
+					if (string.IsNullOrEmpty(ext))
+					{
+						ext = "(no extension)";
+					}
 
-				extensionCounts.TryGetValue(ext, out int count);
-				extensionCounts[ext] = count + group.Files.Count;
+					extensionCounts.TryGetValue(ext, out int count);
+					extensionCounts[ext] = count + 1;
+				}
 			}
 
 			Console.WriteLine("Duplicate files by extension:");
-			foreach (KeyValuePair<string, int> kvp in extensionCounts.OrderByDescending(kvp => kvp.Value))
+			foreach (KeyValuePair<string, int> kvp in extensionCounts.OrderByDescending(kvp => kvp.Value).ThenBy(kvp => kvp.Key, StringComparer.Ordinal))
 			{
 				Console.WriteLine($"  {kvp.Key}: {kvp.Value} file(s)");
 			}

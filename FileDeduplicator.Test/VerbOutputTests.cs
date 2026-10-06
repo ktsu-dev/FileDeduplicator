@@ -113,7 +113,7 @@ public sealed class VerbOutputTests
 		Assert.Contains("Duplicate groups: 1", output);
 		Assert.Contains("Wasted space: 10 B", output);
 		Assert.Contains("Duplicate files by extension:", output);
-		Assert.Contains(".txt: 3 file(s)", output);
+		Assert.Contains(".txt: 2 file(s)", output);
 		Assert.Contains("Largest duplicate groups (by wasted space):", output);
 		Assert.Contains("3 copies, 5 B each, 10 B wasted", output);
 
@@ -150,6 +150,31 @@ public sealed class VerbOutputTests
 		Assert.Contains("Unique files: 2", output);
 		Assert.Contains("Duplicate files: 0", output);
 		Assert.Contains("Duplicate groups: 0", output);
+	}
+
+	/// <summary>
+	/// The extension breakdown counts each redundant copy under its own extension, leaves out the
+	/// copy that is kept, and so sums to "Duplicate files" and reads the same on every run.
+	/// </summary>
+	[TestMethod]
+	public void StatsBreaksDuplicatesDownByEachCopysOwnExtension()
+	{
+		// Arrange -- the keeper is photo.jpg, the shortest name
+		using TempTree tree = new();
+		_ = tree.Write("photo.jpg", "same picture");
+		_ = tree.Write("photo-copy.png", "same picture");
+		_ = tree.Write("backup.bak", "same picture");
+
+		// Act
+		string[] outputs = [.. Enumerable.Range(0, 3).Select(_ => ConsoleCapture.Normalize(ConsoleCapture.Run(new Stats { PathString = tree.Root.WeakString })))];
+
+		// Assert
+		foreach (string output in outputs)
+		{
+			Assert.Contains("Duplicate files: 2", output);
+			Assert.Contains("Duplicate files by extension:\n.bak: 1 file(s)\n.png: 1 file(s)\n", output);
+			Assert.DoesNotContain(".jpg:", output);
+		}
 	}
 
 	/// <summary>
