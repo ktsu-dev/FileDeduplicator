@@ -37,6 +37,35 @@ public sealed class VerbOutputTests
 	}
 
 	/// <summary>
+	/// Every verb given a file instead of a directory says so in one line and deletes nothing.
+	/// </summary>
+	[TestMethod]
+	public void EveryVerbReportsAFilePathAsNotADirectory()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath file = tree.Write("a/f.txt", "content");
+		string path = file.WeakString;
+
+		// Act
+		string[] outputs =
+		[
+			ConsoleCapture.Run(new Scan { PathString = path }),
+			ConsoleCapture.Run(new DryRun { PathString = path }),
+			ConsoleCapture.Run(new Stats { PathString = path }),
+			ConsoleCapture.Run(new Deduplicate { PathString = path }, "y"),
+		];
+
+		// Assert
+		foreach (string output in outputs)
+		{
+			Assert.Contains($"Not a directory: {path}", output);
+		}
+
+		Assert.IsTrue(TempTree.Exists(file), "The file named as the root must be left alone.");
+	}
+
+	/// <summary>
 	/// DryRun names the keeper and every other copy, totals them, and deletes nothing.
 	/// </summary>
 	[TestMethod]
