@@ -44,22 +44,37 @@ internal static class FileScanner
 
 	internal static IReadOnlyList<AbsoluteFilePath> ScanForFiles(AbsoluteDirectoryPath path)
 	{
+		_ = TryScanForFiles(path, out IReadOnlyList<AbsoluteFilePath> files);
+		return files;
+	}
+
+	/// <summary>
+	/// Lists the regular files under <paramref name="path"/>, telling a root that could not be scanned
+	/// apart from one that holds no files.
+	/// </summary>
+	/// <param name="path">The directory to scan.</param>
+	/// <param name="files">The files found, or none when the root could not be scanned.</param>
+	/// <returns><see langword="false"/> when the root is missing or is not a directory.</returns>
+	internal static bool TryScanForFiles(AbsoluteDirectoryPath path, out IReadOnlyList<AbsoluteFilePath> files)
+	{
+		files = [];
+
 		// path.Exists is also true for a file, which Directory.EnumerateFiles then rejects with an
 		// unhandled DirectoryNotFoundException. A path tab-completed one level too far is an easy
 		// mistake, so it gets the same one-line error as a path that is not there at all.
 		if (File.Exists(path.WeakString))
 		{
 			Console.WriteLine($"Not a directory: {path}");
-			return [];
+			return false;
 		}
 
 		if (!Directory.Exists(path.WeakString))
 		{
 			Console.WriteLine($"Directory not found: {path}");
-			return [];
+			return false;
 		}
 
-		List<AbsoluteFilePath> files = [];
+		List<AbsoluteFilePath> found = [];
 		foreach (string file in Directory.EnumerateFiles(path.WeakString, "*", WalkOptions))
 		{
 			// On Unix the enumeration also yields named pipes, sockets and device nodes. Opening a
@@ -69,9 +84,10 @@ internal static class FileScanner
 				continue;
 			}
 
-			files.Add(file.As<AbsoluteFilePath>());
+			found.Add(file.As<AbsoluteFilePath>());
 		}
 
-		return files;
+		files = found;
+		return true;
 	}
 }

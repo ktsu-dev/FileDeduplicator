@@ -15,7 +15,7 @@ using DustInTheWind.ConsoleTools.Controls.Menus.MenuItems;
 [Verb("Menu", isDefault: true)]
 internal sealed class Menu : BaseVerb<Menu>
 {
-	internal override void Run(Menu options)
+	internal override int Run(Menu options)
 	{
 		ScrollMenu scrollMenu = new()
 		{

@@ -30,20 +30,24 @@ internal sealed class Stats : BaseVerb<Stats>
 		return base.ValidateArgs();
 	}
 
-	internal override void Run(Stats options)
+	internal override int Run(Stats options)
 	{
 		Console.WriteLine($"Analyzing: {options.Path}");
 		Console.WriteLine();
 
 		// Step 1: Discover all files
 		Console.WriteLine("Discovering files...");
-		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(options.Path);
+		if (!FileScanner.TryScanForFiles(options.Path, out IReadOnlyList<AbsoluteFilePath> files))
+		{
+			return 1;
+		}
+
 		Console.WriteLine($"Found {files.Count} file(s).");
 		Console.WriteLine();
 
 		if (files.Count == 0)
 		{
-			return;
+			return 0;
 		}
 
 		// Step 2: Hash all files
@@ -101,6 +105,8 @@ internal sealed class Stats : BaseVerb<Stats>
 				Console.WriteLine($"  {group.Hash[..12]}... - {group.Files.Count} copies, {DuplicateReport.FormatBytes(group.FileSize)} each, {DuplicateReport.FormatBytes(wasted)} wasted");
 			}
 		}
+
+		return 0;
 	}
 
 	/// <summary>

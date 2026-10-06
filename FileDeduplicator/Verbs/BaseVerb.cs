@@ -18,11 +18,15 @@ internal abstract class BaseVerb : ICommand
 
 	internal AbsoluteDirectoryPath Path => System.IO.Path.GetFullPath(PathString).As<AbsoluteDirectoryPath>();
 
-	public abstract void Run();
+	/// <summary>
+	/// Runs the verb.
+	/// </summary>
+	/// <returns>The process exit code: 0 on success, 1 when the run failed or the user aborted.</returns>
+	public abstract int Run();
 
 	internal virtual bool ValidateArgs() => true;
 
-	public void Execute() => Run();
+	public void Execute() => _ = Run();
 }
 
 internal abstract class BaseVerb<T> : BaseVerb where T : BaseVerb<T>
@@ -30,7 +34,7 @@ internal abstract class BaseVerb<T> : BaseVerb where T : BaseVerb<T>
 	private bool isActive = true;
 	public override bool IsActive => isActive;
 
-	public override void Run()
+	public override int Run()
 	{
 		// The interactive menu runs the same instance every time its item is chosen, so the path is
 		// put back on every exit, early returns and exceptions included. Otherwise the next run skips
@@ -39,11 +43,11 @@ internal abstract class BaseVerb<T> : BaseVerb where T : BaseVerb<T>
 		{
 			if (!ValidateArgs())
 			{
-				return;
+				return 1;
 			}
 
 			isActive = false;
-			Run((T)this);
+			return Run((T)this);
 		}
 		finally
 		{
@@ -52,5 +56,10 @@ internal abstract class BaseVerb<T> : BaseVerb where T : BaseVerb<T>
 		}
 	}
 
-	internal abstract void Run(T options);
+	/// <summary>
+	/// Runs the verb once its arguments are validated.
+	/// </summary>
+	/// <param name="options">This verb, with its options parsed.</param>
+	/// <returns>The process exit code: 0 on success, 1 when the run failed or the user aborted.</returns>
+	internal abstract int Run(T options);
 }

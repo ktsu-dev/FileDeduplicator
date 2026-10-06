@@ -29,20 +29,24 @@ internal sealed class DryRun : BaseVerb<DryRun>
 		return base.ValidateArgs();
 	}
 
-	internal override void Run(DryRun options)
+	internal override int Run(DryRun options)
 	{
 		Console.WriteLine($"Dry run for: {options.Path}");
 		Console.WriteLine();
 
 		// Step 1: Discover all files
 		Console.WriteLine("Discovering files...");
-		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(options.Path);
+		if (!FileScanner.TryScanForFiles(options.Path, out IReadOnlyList<AbsoluteFilePath> files))
+		{
+			return 1;
+		}
+
 		Console.WriteLine($"Found {files.Count} file(s).");
 		Console.WriteLine();
 
 		if (files.Count == 0)
 		{
-			return;
+			return 0;
 		}
 
 		// Step 2: Hash all files in parallel
@@ -57,7 +61,7 @@ internal sealed class DryRun : BaseVerb<DryRun>
 		if (duplicates.Count == 0)
 		{
 			Console.WriteLine("No duplicate files found.");
-			return;
+			return 0;
 		}
 
 		DeletionPlan plan = DuplicateReport.PlanDeletions(duplicates);
@@ -71,5 +75,6 @@ internal sealed class DryRun : BaseVerb<DryRun>
 		Console.WriteLine($"Duplicate groups: {duplicates.Count}");
 		Console.WriteLine($"Files to delete: {plan.FileCount}");
 		Console.WriteLine($"Space to reclaim: {DuplicateReport.FormatBytes(plan.BytesReclaimable)}");
+		return 0;
 	}
 }

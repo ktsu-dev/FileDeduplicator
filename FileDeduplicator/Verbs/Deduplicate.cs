@@ -29,20 +29,24 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 		return base.ValidateArgs();
 	}
 
-	internal override void Run(Deduplicate options)
+	internal override int Run(Deduplicate options)
 	{
 		Console.WriteLine($"Deduplicating: {options.Path}");
 		Console.WriteLine();
 
 		// Step 1: Discover all files
 		Console.WriteLine("Discovering files...");
-		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(options.Path);
+		if (!FileScanner.TryScanForFiles(options.Path, out IReadOnlyList<AbsoluteFilePath> files))
+		{
+			return 1;
+		}
+
 		Console.WriteLine($"Found {files.Count} file(s).");
 		Console.WriteLine();
 
 		if (files.Count == 0)
 		{
-			return;
+			return 0;
 		}
 
 		// Step 2: Hash all files in parallel
@@ -57,7 +61,7 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 		if (duplicates.Count == 0)
 		{
 			Console.WriteLine("No duplicate files found.");
-			return;
+			return 0;
 		}
 
 		// Step 4: Show exactly which copies go and which one stays. "Shortest filename wins" is
@@ -82,7 +86,7 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 		if (!string.Equals(confirmation, "y", StringComparison.OrdinalIgnoreCase))
 		{
 			Console.WriteLine("Aborted.");
-			return;
+			return 1;
 		}
 
 		Console.WriteLine();
@@ -108,6 +112,9 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 		if (result.Errors.Count > 0)
 		{
 			Console.WriteLine($"Encountered {result.Errors.Count} error(s) during deletion.");
+			return 1;
 		}
+
+		return 0;
 	}
 }
