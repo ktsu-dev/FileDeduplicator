@@ -1,9 +1,9 @@
-## v1.3.12 (patch)
+## v1.3.13 (patch)
 
-Changes since v1.3.11:
+Changes since v1.3.12:
 
-- Replace Scan's nested ternary and use Assert.DoesNotContain ([@Claude](https://github.com/Claude))
-- Name the full path of a file that fails to hash [patch] ([@Claude](https://github.com/Claude))
-- Report a file passed as the root instead of crashing [patch] ([@Claude](https://github.com/Claude))
-- Never delete empty files when deduplicating [patch] ([@Claude](https://github.com/Claude))
+- Merge main into fix/stats-extension-breakdown ([@Claude](https://github.com/Claude))
+- Project redundant copies to their extensions with Select ([@Claude](https://github.com/Claude))
+- Extract the Stats extension breakdown into its own method ([@Claude](https://github.com/Claude))
+- Count each duplicate under its own extension in Stats [patch] ([@Claude](https://github.com/Claude))
 
