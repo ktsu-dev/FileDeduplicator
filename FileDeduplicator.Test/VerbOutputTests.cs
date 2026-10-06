@@ -153,6 +153,26 @@ public sealed class VerbOutputTests
 	}
 
 	/// <summary>
+	/// A file that cannot be hashed is named by its full path, so the failing copy can be found
+	/// among others sharing its file name.
+	/// </summary>
+	[TestMethod]
+	public void AHashingErrorNamesTheFullPath()
+	{
+		// Arrange
+		using TempTree tree = new();
+		_ = tree.Write("one/IMG_0001.jpg", "alpha");
+		AbsoluteFilePath locked = tree.Write("two/IMG_0001.jpg", "beta");
+		using FileStream holder = new(locked.WeakString, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+		// Act
+		string output = ConsoleCapture.Run(new Stats { PathString = tree.Root.WeakString });
+
+		// Assert
+		Assert.Contains($"Error hashing {locked}:", output);
+	}
+
+	/// <summary>
 	/// A tree where every file hashes has no unreadable line at all.
 	/// </summary>
 	[TestMethod]

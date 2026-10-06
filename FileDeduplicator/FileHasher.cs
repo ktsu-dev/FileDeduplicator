@@ -51,7 +51,9 @@ internal static class FileHasher
 	{
 		lock (ConsoleLock)
 		{
-			Console.WriteLine($"  Error hashing {filePath.FileName}: {ex.Message}");
+			// The full path, not the file name: index.js or IMG_0001.jpg can repeat dozens of times in
+			// one tree, and this line is the only place the failing copy is ever named.
+			Console.WriteLine($"  Error hashing {filePath}: {ex.Message}");
 		}
 	}
 
