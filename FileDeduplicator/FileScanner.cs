@@ -42,23 +42,14 @@ internal static class FileScanner
 		AttributesToSkip = FileAttributes.ReparsePoint,
 	};
 
-	internal static IReadOnlyList<AbsoluteFilePath> ScanForFiles(AbsoluteDirectoryPath path)
-	{
-		_ = TryScanForFiles(path, out IReadOnlyList<AbsoluteFilePath> files);
-		return files;
-	}
-
 	/// <summary>
-	/// Lists the regular files under <paramref name="path"/>, telling a root that could not be scanned
-	/// apart from one that holds no files.
+	/// Checks that <paramref name="path"/> is a directory that can be scanned, and says why in one
+	/// line when it is not.
 	/// </summary>
-	/// <param name="path">The directory to scan.</param>
-	/// <param name="files">The files found, or none when the root could not be scanned.</param>
+	/// <param name="path">The root to check.</param>
 	/// <returns><see langword="false"/> when the root is missing or is not a directory.</returns>
-	internal static bool TryScanForFiles(AbsoluteDirectoryPath path, out IReadOnlyList<AbsoluteFilePath> files)
+	internal static bool IsScannableDirectory(AbsoluteDirectoryPath path)
 	{
-		files = [];
-
 		// path.Exists is also true for a file, which Directory.EnumerateFiles then rejects with an
 		// unhandled DirectoryNotFoundException. A path tab-completed one level too far is an easy
 		// mistake, so it gets the same one-line error as a path that is not there at all.
@@ -74,7 +65,17 @@ internal static class FileScanner
 			return false;
 		}
 
-		List<AbsoluteFilePath> found = [];
+		return true;
+	}
+
+	internal static IReadOnlyList<AbsoluteFilePath> ScanForFiles(AbsoluteDirectoryPath path)
+	{
+		if (!IsScannableDirectory(path))
+		{
+			return [];
+		}
+
+		List<AbsoluteFilePath> files = [];
 		foreach (string file in Directory.EnumerateFiles(path.WeakString, "*", WalkOptions))
 		{
 			// On Unix the enumeration also yields named pipes, sockets and device nodes. Opening a
@@ -84,10 +85,9 @@ internal static class FileScanner
 				continue;
 			}
 
-			found.Add(file.As<AbsoluteFilePath>());
+			files.Add(file.As<AbsoluteFilePath>());
 		}
 
-		files = found;
-		return true;
+		return files;
 	}
 }

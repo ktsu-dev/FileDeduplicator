@@ -29,7 +29,17 @@ internal static class ConsoleCapture
 	/// <param name="stdin">Lines the verb's prompts will read, or nothing.</param>
 	/// <param name="exitCode">The exit code the verb returned.</param>
 	/// <returns>Everything the verb wrote to the console.</returns>
-	internal static string Run(BaseVerb verb, string stdin, out int exitCode)
+	internal static string Run(BaseVerb verb, string stdin, out int exitCode) =>
+		Run(_ => verb.Run(), stdin, out exitCode);
+
+	/// <summary>
+	/// Runs an action that returns an exit code, feeding it the given answers on stdin.
+	/// </summary>
+	/// <param name="action">The action to run. It is handed the writer standing in for the console.</param>
+	/// <param name="stdin">Lines the action's prompts will read, or nothing.</param>
+	/// <param name="exitCode">The exit code the action returned.</param>
+	/// <returns>Everything the action wrote to the console.</returns>
+	internal static string Run(Func<TextWriter, int> action, string stdin, out int exitCode)
 	{
 		TextWriter originalOut = Console.Out;
 		TextReader originalIn = Console.In;
@@ -41,7 +51,7 @@ internal static class ConsoleCapture
 			Console.SetOut(captured);
 			Console.SetIn(answers);
 
-			exitCode = verb.Run();
+			exitCode = action(captured);
 
 			return captured.ToString();
 		}

@@ -29,24 +29,20 @@ internal sealed class Scan : BaseVerb<Scan>
 		return base.ValidateArgs();
 	}
 
-	internal override int Run(Scan options)
+	internal override void Run(Scan options)
 	{
 		Console.WriteLine($"Scanning: {options.Path}");
 		Console.WriteLine();
 
 		// Step 1: Discover all files
 		Console.WriteLine("Discovering files...");
-		if (!FileScanner.TryScanForFiles(options.Path, out IReadOnlyList<AbsoluteFilePath> files))
-		{
-			return 1;
-		}
-
+		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(options.Path);
 		Console.WriteLine($"Found {files.Count} file(s).");
 		Console.WriteLine();
 
 		if (files.Count == 0)
 		{
-			return 0;
+			return;
 		}
 
 		// Step 2: Hash all files in parallel
@@ -61,7 +57,7 @@ internal sealed class Scan : BaseVerb<Scan>
 		if (duplicates.Count == 0)
 		{
 			Console.WriteLine("No duplicate files found.");
-			return 0;
+			return;
 		}
 
 		// Step 4: Display results
@@ -96,6 +92,5 @@ internal sealed class Scan : BaseVerb<Scan>
 		Console.WriteLine($"Total wasted space: {DuplicateReport.FormatBytes(totalWastedBytes)}");
 		Console.WriteLine();
 		Console.WriteLine("Run the 'Deduplicate' command to remove duplicates.");
-		return 0;
 	}
 }

@@ -30,47 +30,37 @@ public sealed class ExitCodeTests
 
 	private static int ExitCodeOfCommandLine(params string[] args)
 	{
-		TextWriter originalOut = Console.Out;
-		TextReader originalIn = Console.In;
-		try
-		{
-			using StringWriter captured = new();
-			using StringReader noInput = new(string.Empty);
-			Console.SetOut(captured);
-			Console.SetIn(noInput);
+		_ = ConsoleCapture.Run(
+			captured =>
+			{
+				using Parser parser = new(settings => settings.HelpWriter = captured);
+				return Program.Run(parser, args);
+			},
+			string.Empty,
+			out int exitCode);
+		return exitCode;
+	}
 
-			using Parser parser = new(settings => settings.HelpWriter = captured);
-			return Program.Run(parser, args);
-		}
-		finally
-		{
-			Console.SetOut(originalOut);
-			Console.SetIn(originalIn);
-		}
+	private static void AssertEveryVerbExitsOne(string path)
+	{
+		Assert.AreEqual(1, ExitCodeOf(new Scan { PathString = path }), "Scan");
+		Assert.AreEqual(1, ExitCodeOf(new DryRun { PathString = path }), "DryRun");
+		Assert.AreEqual(1, ExitCodeOf(new Stats { PathString = path }), "Stats");
+		Assert.AreEqual(1, ExitCodeOf(new Deduplicate { PathString = path }, "y"), "Deduplicate");
 	}
 
 	[TestMethod]
 	public void EveryVerbExitsOneForAMissingDirectory()
 	{
 		using TempTree tree = new();
-		string missing = Path.Combine(tree.Root.WeakString, "not-there");
-
-		Assert.AreEqual(1, ExitCodeOf(new Scan { PathString = missing }), "Scan");
-		Assert.AreEqual(1, ExitCodeOf(new DryRun { PathString = missing }), "DryRun");
-		Assert.AreEqual(1, ExitCodeOf(new Stats { PathString = missing }), "Stats");
-		Assert.AreEqual(1, ExitCodeOf(new Deduplicate { PathString = missing }, "y"), "Deduplicate");
+		AssertEveryVerbExitsOne(Path.Combine(tree.Root.WeakString, "not-there"));
 	}
 
 	[TestMethod]
 	public void EveryVerbExitsOneForAFileGivenAsTheRoot()
 	{
 		using TempTree tree = new();
-		string file = tree.Write("f.txt", "content").WeakString;
-
-		Assert.AreEqual(1, ExitCodeOf(new Scan { PathString = file }), "Scan");
-		Assert.AreEqual(1, ExitCodeOf(new DryRun { PathString = file }), "DryRun");
-		Assert.AreEqual(1, ExitCodeOf(new Stats { PathString = file }), "Stats");
-		Assert.AreEqual(1, ExitCodeOf(new Deduplicate { PathString = file }, "y"), "Deduplicate");
+		AssertEveryVerbExitsOne(tree.Write("f.txt", "content").WeakString);
 	}
 
 	[TestMethod]

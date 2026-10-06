@@ -24,6 +24,18 @@ internal abstract class BaseVerb : ICommand
 	/// <returns>The process exit code: 0 on success, 1 when the run failed or the user aborted.</returns>
 	public abstract int Run();
 
+	/// <summary>
+	/// Gets or sets the exit code of the current run. It starts at 0, and a verb sets it to 1 when the
+	/// run fails or the user aborts.
+	/// </summary>
+	internal int ExitCode { get; set; }
+
+	/// <summary>
+	/// Gets whether the verb works on the directory named by <see cref="Path"/>, which then has to
+	/// exist before the verb runs.
+	/// </summary>
+	internal virtual bool ScansADirectory => true;
+
 	internal virtual bool ValidateArgs() => true;
 
 	public void Execute() => _ = Run();
@@ -41,13 +53,15 @@ internal abstract class BaseVerb<T> : BaseVerb where T : BaseVerb<T>
 		// the prompt and works on the previous directory.
 		try
 		{
-			if (!ValidateArgs())
+			ExitCode = 0;
+			if (!ValidateArgs() || (ScansADirectory && !FileScanner.IsScannableDirectory(Path)))
 			{
 				return 1;
 			}
 
 			isActive = false;
-			return Run((T)this);
+			Run((T)this);
+			return ExitCode;
 		}
 		finally
 		{
@@ -56,10 +70,5 @@ internal abstract class BaseVerb<T> : BaseVerb where T : BaseVerb<T>
 		}
 	}
 
-	/// <summary>
-	/// Runs the verb once its arguments are validated.
-	/// </summary>
-	/// <param name="options">This verb, with its options parsed.</param>
-	/// <returns>The process exit code: 0 on success, 1 when the run failed or the user aborted.</returns>
-	internal abstract int Run(T options);
+	internal abstract void Run(T options);
 }
