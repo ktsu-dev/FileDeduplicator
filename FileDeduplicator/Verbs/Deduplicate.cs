@@ -13,7 +13,7 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 {
 	internal override bool ValidateArgs()
 	{
-		if (PathString is "." or "")
+		if (string.IsNullOrWhiteSpace(PathString))
 		{
 			Console.Write("Enter the path to deduplicate: ");
 			string? input = Console.ReadLine()?.Trim();

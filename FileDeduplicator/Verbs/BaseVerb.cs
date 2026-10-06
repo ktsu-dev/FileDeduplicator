@@ -11,12 +11,17 @@ using ktsu.Semantics.Strings;
 
 internal abstract class BaseVerb : ICommand
 {
+	/// <summary>
+	/// Gets or sets the path given with <c>-p</c>, or <see langword="null"/> when none was given and the
+	/// verb should ask for one. An explicit <c>-p .</c> means the current directory, so <c>"."</c>
+	/// cannot double as the "not supplied" marker.
+	/// </summary>
 	[Option('p', "path", Required = false, HelpText = "The root path to scan for files.")]
-	public string PathString { get; set; } = ".";
+	public string? PathString { get; set; }
 
 	public abstract bool IsActive { get; }
 
-	internal AbsoluteDirectoryPath Path => System.IO.Path.GetFullPath(PathString).As<AbsoluteDirectoryPath>();
+	internal AbsoluteDirectoryPath Path => System.IO.Path.GetFullPath(PathString ?? ".").As<AbsoluteDirectoryPath>();
 
 	/// <summary>
 	/// Runs the verb.
@@ -66,7 +71,7 @@ internal abstract class BaseVerb<T> : BaseVerb where T : BaseVerb<T>
 		finally
 		{
 			isActive = true;
-			PathString = ".";
+			PathString = null;
 		}
 	}
 
