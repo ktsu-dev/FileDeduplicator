@@ -82,27 +82,7 @@ internal sealed class Stats : BaseVerb<Stats>
 			Console.WriteLine($"Wasted space: {DuplicateReport.FormatBytes(wastedSpace)}");
 			Console.WriteLine();
 
-			// Extension breakdown. Each redundant copy is counted under its own extension, and the
-			// copy that would be kept is left out, so the breakdown sums to "Duplicate files" above.
-			// Crediting a whole group to Files[0] counted the keeper too, and picked whichever copy
-			// the parallel hash happened to list first, so the same tree reported a different
-			// extension from run to run.
-			Dictionary<string, int> extensionCounts = [];
-			foreach (DuplicateGroup group in duplicates)
-			{
-				AbsoluteFilePath keeper = Deduplicator.SelectFileToKeep(group.Files);
-				foreach (AbsoluteFilePath file in group.Files.Where(f => f != keeper))
-				{
-					string ext = System.IO.Path.GetExtension(file.WeakString);
-					if (string.IsNullOrEmpty(ext))
-					{
-						ext = "(no extension)";
-					}
-
-					extensionCounts.TryGetValue(ext, out int count);
-					extensionCounts[ext] = count + 1;
-				}
-			}
+			Dictionary<string, int> extensionCounts = CountRedundantCopiesByExtension(duplicates);
 
 			Console.WriteLine("Duplicate files by extension:");
 			foreach (KeyValuePair<string, int> kvp in extensionCounts.OrderByDescending(kvp => kvp.Value).ThenBy(kvp => kvp.Key, StringComparer.Ordinal))
@@ -121,5 +101,38 @@ internal sealed class Stats : BaseVerb<Stats>
 				Console.WriteLine($"  {group.Hash[..12]}... - {group.Files.Count} copies, {DuplicateReport.FormatBytes(group.FileSize)} each, {DuplicateReport.FormatBytes(wasted)} wasted");
 			}
 		}
+	}
+
+	/// <summary>
+	/// Counts each redundant copy under its own extension, leaving out the copy that is kept, so the
+	/// breakdown sums to "Duplicate files".
+	/// </summary>
+	/// <remarks>
+	/// Crediting a whole group to <c>Files[0]</c> counted the keeper too, and picked whichever copy
+	/// the parallel hash happened to list first, so the same tree reported a different extension
+	/// from run to run.
+	/// </remarks>
+	/// <param name="duplicates">The duplicate groups to break down.</param>
+	/// <returns>The number of redundant copies per extension.</returns>
+	private static Dictionary<string, int> CountRedundantCopiesByExtension(IReadOnlyList<DuplicateGroup> duplicates)
+	{
+		Dictionary<string, int> extensionCounts = [];
+		foreach (DuplicateGroup group in duplicates)
+		{
+			AbsoluteFilePath keeper = Deduplicator.SelectFileToKeep(group.Files);
+			foreach (AbsoluteFilePath file in group.Files.Where(f => f != keeper))
+			{
+				string ext = System.IO.Path.GetExtension(file.WeakString);
+				if (string.IsNullOrEmpty(ext))
+				{
+					ext = "(no extension)";
+				}
+
+				extensionCounts.TryGetValue(ext, out int count);
+				extensionCounts[ext] = count + 1;
+			}
+		}
+
+		return extensionCounts;
 	}
 }
