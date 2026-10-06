@@ -69,6 +69,25 @@ public sealed class FileScannerAndHasherTests
 	}
 
 	/// <summary>
+	/// A path to a file, rather than the folder holding it, must return an empty list rather than
+	/// throwing, so pasting a file path does not crash the tool.
+	/// </summary>
+	[TestMethod]
+	public void ScanOfAFileReturnsNothing()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath file = tree.Write("a/f.txt", "content");
+		AbsoluteDirectoryPath notADirectory = file.WeakString.As<AbsoluteDirectoryPath>();
+
+		// Act
+		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(notADirectory);
+
+		// Assert
+		Assert.IsEmpty(files);
+	}
+
+	/// <summary>
 	/// One unreadable directory must not abort the scan. Enumeration is lazy, so the refusal
 	/// arrives partway through the walk, after files elsewhere in the tree have already been found
 	/// and with the rest still to visit.
