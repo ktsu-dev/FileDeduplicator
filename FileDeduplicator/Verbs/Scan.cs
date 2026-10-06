@@ -68,6 +68,7 @@ internal sealed class Scan : BaseVerb<Scan>
 		foreach (DuplicateGroup group in duplicates)
 		{
 			AbsoluteFilePath keeper = Deduplicator.SelectFileToKeep(group.Files);
+			bool deletable = Deduplicator.IsDeletable(group);
 			long wastedBytes = group.FileSize * (group.Files.Count - 1);
 			totalWastedBytes += wastedBytes;
 
@@ -75,7 +76,7 @@ internal sealed class Scan : BaseVerb<Scan>
 
 			foreach (AbsoluteFilePath file in group.Files)
 			{
-				string marker = file == keeper ? " [KEEP]" : " [DELETE]";
+				string marker = !deletable ? " [KEEP, empty]" : file == keeper ? " [KEEP]" : " [DELETE]";
 				Console.WriteLine($"    {file}{marker}");
 			}
 
