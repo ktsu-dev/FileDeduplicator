@@ -120,14 +120,13 @@ internal sealed class Stats : BaseVerb<Stats>
 		foreach (DuplicateGroup group in duplicates)
 		{
 			AbsoluteFilePath keeper = Deduplicator.SelectFileToKeep(group.Files);
-			foreach (AbsoluteFilePath file in group.Files.Where(f => f != keeper))
-			{
-				string ext = System.IO.Path.GetExtension(file.WeakString);
-				if (string.IsNullOrEmpty(ext))
-				{
-					ext = "(no extension)";
-				}
+			IEnumerable<string> extensions = group.Files
+				.Where(f => f != keeper)
+				.Select(f => System.IO.Path.GetExtension(f.WeakString))
+				.Select(ext => string.IsNullOrEmpty(ext) ? "(no extension)" : ext);
 
+			foreach (string ext in extensions)
+			{
 				extensionCounts.TryGetValue(ext, out int count);
 				extensionCounts[ext] = count + 1;
 			}
