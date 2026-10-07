@@ -6,8 +6,6 @@ using System.Collections.Generic;
 
 using CommandLine;
 
-using ktsu.Semantics.Paths;
-
 [Verb("DryRun", HelpText = "Scan for duplicates and show what would be deleted without actually deleting.")]
 internal sealed class DryRun : BaseVerb<DryRun>
 {
@@ -34,25 +32,13 @@ internal sealed class DryRun : BaseVerb<DryRun>
 		Console.WriteLine($"Dry run for: {options.Path}");
 		Console.WriteLine();
 
-		// Step 1: Discover all files
-		Console.WriteLine("Discovering files...");
-		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(options.Path);
-		Console.WriteLine($"Found {files.Count} file(s).");
-		Console.WriteLine();
-
-		if (files.Count == 0)
+		DuplicateScan? scan = DuplicateScan.Run(options.Path);
+		if (scan is null)
 		{
 			return;
 		}
 
-		// Step 2: Hash, in parallel, every file whose size another file shares
-		Console.WriteLine("Hashing files...");
-		Dictionary<AbsoluteFilePath, string> fileHashes = FileHasher.HashPossibleDuplicates(files, out _);
-		Console.WriteLine();
-
-		// Step 3: Group by hash and find duplicates
-		Dictionary<string, List<AbsoluteFilePath>> hashGroups = Deduplicator.GroupByHash(fileHashes);
-		IReadOnlyList<DuplicateGroup> duplicates = Deduplicator.FindDuplicates(hashGroups);
+		IReadOnlyList<DuplicateGroup> duplicates = scan.Duplicates;
 
 		if (duplicates.Count == 0)
 		{
