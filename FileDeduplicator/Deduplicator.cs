@@ -79,13 +79,8 @@ internal static class Deduplicator
 	{
 		HashSet<FileIdentity> seen = [];
 
-		foreach (AbsoluteFilePath path in OrderByPreference(paths))
-		{
-			if (!FileIdentity.TryGet(path.WeakString, out FileIdentity identity) || seen.Add(identity))
-			{
-				yield return path;
-			}
-		}
+		return OrderByPreference(paths)
+			.Where(path => !FileIdentity.TryGet(path.WeakString, out FileIdentity identity) || seen.Add(identity));
 	}
 
 	/// <summary>
