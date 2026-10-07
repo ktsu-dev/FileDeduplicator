@@ -282,4 +282,63 @@ public sealed class VerbOutputTests
 		Assert.Contains("Found 0 file(s).", output);
 		Assert.DoesNotContain("Hashing files...", output);
 	}
+
+	/// <summary>
+	/// A file the path type cannot represent is named and skipped, and every verb still reports the
+	/// duplicates around it instead of crashing (ktsu-dev/FileDeduplicator#140).
+	/// </summary>
+	[TestMethod]
+	public void EveryVerbSkipsAnUnrepresentableFileAndReportsTheRest()
+	{
+		// Arrange
+		using TempTree tree = new();
+		_ = tree.Write("a.txt", "alpha");
+		AbsoluteFilePath copy = tree.Write("aa.txt", "alpha");
+		FileScannerAndHasherTests.WriteUnrepresentable(tree, "notes <draft>.txt");
+		string path = tree.Root.WeakString;
+
+		// Act
+		(string Output, int ExitCode)[] runs =
+		[
+			RunWithExitCode(new Scan { PathString = path }),
+			RunWithExitCode(new DryRun { PathString = path }),
+			RunWithExitCode(new Stats { PathString = path }),
+			RunWithExitCode(new Deduplicate { PathString = path }, "y"),
+		];
+
+		// Assert
+		foreach ((string output, int exitCode) in runs)
+		{
+			Assert.AreEqual(0, exitCode, output);
+			Assert.Contains("notes <draft>.txt", output, "The skipped file was not named.");
+			Assert.Contains("Duplicate", output, StringComparison.OrdinalIgnoreCase);
+		}
+
+		Assert.IsFalse(TempTree.Exists(copy), "Deduplicate did not remove the duplicate beside the skipped file.");
+	}
+
+	/// <summary>
+	/// A root the path type cannot represent fails in one line with exit code 1, not a stack trace.
+	/// </summary>
+	[TestMethod]
+	public void ScanOfAnUnrepresentableRootReportsItInOneLine()
+	{
+		// Arrange
+		using TempTree tree = new();
+		FileScannerAndHasherTests.WriteUnrepresentable(tree, "left|right/f.txt");
+		string root = Path.Combine(tree.Root.WeakString, "left|right");
+
+		// Act
+		(string output, int exitCode) = RunWithExitCode(new Scan { PathString = root });
+
+		// Assert
+		Assert.AreEqual(1, exitCode, output);
+		Assert.Contains($"Cannot scan {root}", output);
+	}
+
+	private static (string Output, int ExitCode) RunWithExitCode(BaseVerb verb, string stdin = "")
+	{
+		string output = ConsoleCapture.Run(verb, stdin, out int exitCode);
+		return (output, exitCode);
+	}
 }

@@ -324,6 +324,71 @@ public sealed class FileScannerAndHasherTests
 	}
 
 	/// <summary>
+	/// A file name the path type rejects but the file system accepts must be skipped, not abort the
+	/// scan of the whole tree (ktsu-dev/FileDeduplicator#140).
+	/// </summary>
+	[TestMethod]
+	public void ScanSkipsAFileWhoseNameThePathTypeRejects()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath a = tree.Write("a.txt", "x");
+		AbsoluteFilePath b = tree.Write("b.txt", "x");
+		WriteUnrepresentable(tree, "notes <draft>.txt");
+		WriteUnrepresentable(tree, "left|right.txt");
+
+		// Act
+		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(tree.Root);
+
+		// Assert
+		CollectionAssert.AreEquivalent(new[] { a, b }, files.ToArray());
+	}
+
+	/// <summary>
+	/// A path longer than the path type accepts must be skipped, not abort the scan of the whole
+	/// tree. Deep <c>node_modules</c> and build output trees routinely have such paths.
+	/// </summary>
+	[TestMethod]
+	public void ScanSkipsAFileWhosePathIsTooLongForThePathType()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath a = tree.Write("a.txt", "x");
+		AbsoluteFilePath b = tree.Write("b.txt", "x");
+		string deep = string.Join('/', Enumerable.Repeat(new string('d', 60), 5)) + "/long.txt";
+		WriteUnrepresentable(tree, deep);
+
+		// Act
+		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(tree.Root);
+
+		// Assert
+		CollectionAssert.AreEquivalent(new[] { a, b }, files.ToArray());
+	}
+
+	/// <summary>
+	/// Writes a file whose path <see cref="AbsoluteFilePath"/> rejects, which <see cref="TempTree.Write"/>
+	/// cannot do because it hands back that type. Marks the test inconclusive where the file system
+	/// refuses the path too, as Windows does for <c>&lt;</c> and <c>|</c>.
+	/// </summary>
+	/// <param name="tree">The tree to write into.</param>
+	/// <param name="relativePath">Path relative to the tree's root, using forward slashes.</param>
+	internal static void WriteUnrepresentable(TempTree tree, string relativePath)
+	{
+		string full = Path.Combine(tree.Root.WeakString, relativePath.Replace('/', Path.DirectorySeparatorChar));
+		try
+		{
+			_ = Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+			File.WriteAllText(full, "unrepresentable");
+		}
+		catch (Exception ex) when (ex is IOException or ArgumentException or UnauthorizedAccessException)
+		{
+			Assert.Inconclusive($"This file system does not accept {full}, so there is nothing to stage: {ex.Message}");
+		}
+
+		Assert.ThrowsExactly<ArgumentException>(full.As<AbsoluteFilePath>, $"{full} is representable, so it does not stage the case under test.");
+	}
+
+	/// <summary>
 	/// Creates a named pipe with <c>mkfifo</c>, or marks the test inconclusive where there is none.
 	/// </summary>
 	/// <param name="path">Where to create the pipe.</param>

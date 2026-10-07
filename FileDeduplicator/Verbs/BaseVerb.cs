@@ -59,7 +59,7 @@ internal abstract class BaseVerb<T> : BaseVerb where T : BaseVerb<T>
 		try
 		{
 			ExitCode = 0;
-			if (!ValidateArgs() || (ScansADirectory && !FileScanner.IsScannableDirectory(Path)))
+			if (!ValidateArgs() || (ScansADirectory && (!IsRepresentablePath() || !FileScanner.IsScannableDirectory(Path))))
 			{
 				return 1;
 			}
@@ -76,4 +76,28 @@ internal abstract class BaseVerb<T> : BaseVerb where T : BaseVerb<T>
 	}
 
 	internal abstract void Run(T options);
+
+	/// <summary>
+	/// Checks that the root given by <see cref="BaseVerb.PathString"/> converts to an
+	/// <see cref="AbsoluteDirectoryPath"/>, and says why in one line when it does not.
+	/// </summary>
+	/// <remarks>
+	/// The conversion rejects characters and lengths the file system accepts, such as <c>|</c> in a
+	/// Unix directory name or a path over 256 characters, and the exception would otherwise escape
+	/// <see cref="Run()"/> as a stack trace.
+	/// </remarks>
+	/// <returns><see langword="false"/> when the root cannot be represented.</returns>
+	private bool IsRepresentablePath()
+	{
+		try
+		{
+			_ = Path;
+			return true;
+		}
+		catch (ArgumentException ex)
+		{
+			Console.WriteLine($"Cannot scan {PathString}: {ex.Message}");
+			return false;
+		}
+	}
 }
