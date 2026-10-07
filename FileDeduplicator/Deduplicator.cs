@@ -35,6 +35,11 @@ internal static class Deduplicator
 	/// The hash pass can take minutes on a large tree, and the directories this is pointed at are
 	/// often live, so a file that hashed may be gone by now. A vanished copy is dropped rather than
 	/// allowed to abort the run, and a group it leaves with a single copy is no longer a group.
+	/// <para>
+	/// Paths that lead to one file (see <see cref="FileIdentity"/>) are collapsed to the one
+	/// <see cref="SelectFileToKeep"/> would prefer. They are one copy, not several, so a file the
+	/// scan reached through a bind mount or a hardlink is not a duplicate of itself.
+	/// </para>
 	/// </remarks>
 	/// <param name="hashGroups">The files that hashed, grouped by hash.</param>
 	/// <returns>Every group that still has at least two copies.</returns>
@@ -46,7 +51,7 @@ internal static class Deduplicator
 		{
 			// Each copy is sized exactly once, so the filter and the size it reports cannot disagree
 			// about a file that disappears between two reads.
-			(AbsoluteFilePath File, long Size)[] present = [.. kvp.Value
+			(AbsoluteFilePath File, long Size)[] present = [.. CollapseSameFile(kvp.Value)
 				.Select(file => (File: file, Size: TryGetSize(file, out long size) ? size : (long?)null))
 				.Where(copy => copy.Size.HasValue)
 				.Select(copy => (copy.File, copy.Size!.Value))];
@@ -58,6 +63,29 @@ internal static class Deduplicator
 		}
 
 		return duplicates;
+	}
+
+	/// <summary>
+	/// Keeps one path per file, preferring the path <see cref="SelectFileToKeep"/> would keep.
+	/// </summary>
+	/// <param name="paths">The paths in one hash group.</param>
+	/// <returns>The paths, with every further path to an already-listed file left out.</returns>
+	/// <remarks>
+	/// A path whose identity cannot be read is kept: it is either gone, which the sizing that follows
+	/// drops, or it cannot be inspected, and the deletion guard in <see cref="DeleteDuplicates"/>
+	/// still stands between it and the keeper.
+	/// </remarks>
+	private static IEnumerable<AbsoluteFilePath> CollapseSameFile(IEnumerable<AbsoluteFilePath> paths)
+	{
+		HashSet<FileIdentity> seen = [];
+
+		foreach (AbsoluteFilePath path in OrderByPreference(paths))
+		{
+			if (!FileIdentity.TryGet(path.WeakString, out FileIdentity identity) || seen.Add(identity))
+			{
+				yield return path;
+			}
+		}
 	}
 
 	/// <summary>
@@ -95,7 +123,10 @@ internal static class Deduplicator
 	}
 
 	internal static AbsoluteFilePath SelectFileToKeep(List<AbsoluteFilePath> duplicates) =>
-		duplicates.OrderBy(f => f.FileName.WeakString.Length).ThenBy(f => f.WeakString, StringComparer.Ordinal).First();
+		OrderByPreference(duplicates).First();
+
+	private static IOrderedEnumerable<AbsoluteFilePath> OrderByPreference(IEnumerable<AbsoluteFilePath> files) =>
+		files.OrderBy(f => f.FileName.WeakString.Length).ThenBy(f => f.WeakString, StringComparer.Ordinal);
 
 	/// <summary>
 	/// Reports whether deduplication may delete copies from a group.
@@ -130,6 +161,8 @@ internal static class Deduplicator
 				continue;
 			}
 
+			bool keeperIdentified = FileIdentity.TryGet(keeper.WeakString, out FileIdentity keeperIdentity);
+
 			foreach (AbsoluteFilePath file in group.Files.Where(f => f != keeper))
 			{
 				// Re-hash immediately before deleting: a file that changed since the scan is no
@@ -138,6 +171,16 @@ internal static class Deduplicator
 				if (!StillMatchesGroup(file, group.Hash, out string? reason))
 				{
 					Skip(file, reason, skipped);
+					continue;
+				}
+
+				// A path that leads to the keeper's own file is not another copy. Through a bind
+				// mount, deleting it deletes the keeper, and the re-hash above cannot tell, because
+				// the keeper is the file being deleted. FindDuplicates already collapses such paths,
+				// so this is the last guard, against whatever the grouping was handed.
+				if (keeperIdentified && IsSameFile(file, keeperIdentity))
+				{
+					Skip(file, $"is the same file as the copy being kept ({keeper}), reached through another path", skipped);
 					continue;
 				}
 
@@ -170,6 +213,15 @@ internal static class Deduplicator
 
 		return new DeduplicationResult(deletedCount, bytesReclaimed, errors, skipped);
 	}
+
+	/// <summary>
+	/// Reports whether a path leads to the file with the given identity.
+	/// </summary>
+	/// <param name="file">The path to check.</param>
+	/// <param name="identity">The identity to compare against.</param>
+	/// <returns><see langword="true"/> only when the path's identity was read and matches.</returns>
+	private static bool IsSameFile(AbsoluteFilePath file, FileIdentity identity) =>
+		FileIdentity.TryGet(file.WeakString, out FileIdentity fileIdentity) && fileIdentity == identity;
 
 	/// <summary>
 	/// Preserves every copy in a group, because the copy that would have been kept no longer
