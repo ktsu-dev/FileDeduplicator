@@ -74,7 +74,7 @@ internal static class Deduplicator
 	/// <param name="file">The file to size.</param>
 	/// <param name="size">The size in bytes, when it could be read.</param>
 	/// <returns><see langword="true"/> if the file is still there and its size was read.</returns>
-	private static bool TryGetSize(AbsoluteFilePath file, out long size)
+	internal static bool TryGetSize(AbsoluteFilePath file, out long size)
 	{
 		try
 		{

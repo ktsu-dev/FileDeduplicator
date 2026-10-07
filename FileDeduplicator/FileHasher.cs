@@ -5,6 +5,7 @@ namespace ktsu.FileDeduplicator;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 
@@ -13,6 +14,28 @@ using ktsu.Semantics.Paths;
 internal static class FileHasher
 {
 	private static readonly Lock ConsoleLock = new();
+
+	/// <summary>
+	/// Hashes only the files that could have a duplicate, which are those whose size some other file
+	/// shares.
+	/// </summary>
+	/// <remarks>
+	/// Two files of different lengths can never match, so hashing a file whose size is unique in the
+	/// tree reads it end to end for nothing. In a media library most large files have a size of their
+	/// own, and the cold disks, USB drives and network shares this tool is pointed at make that wasted
+	/// read the bulk of a run. Zero-byte files share a size like any other, so they still group. A file
+	/// that cannot be sized is hashed anyway, so it is reported as unreadable exactly as before.
+	/// </remarks>
+	/// <param name="filePaths">The scanned files.</param>
+	/// <param name="uniqueSize">The files left unhashed because no other file has their size.</param>
+	/// <returns>The hash of every file that might have a duplicate and could be read.</returns>
+	internal static Dictionary<AbsoluteFilePath, string> HashPossibleDuplicates(IReadOnlyList<AbsoluteFilePath> filePaths, out IReadOnlyList<AbsoluteFilePath> uniqueSize)
+	{
+		IGrouping<long?, AbsoluteFilePath>[] bySize = [.. filePaths.GroupBy(file => Deduplicator.TryGetSize(file, out long size) ? size : (long?)null)];
+
+		uniqueSize = [.. bySize.Where(g => g.Key.HasValue && g.Count() == 1).SelectMany(g => g)];
+		return HashFiles([.. bySize.Where(g => !g.Key.HasValue || g.Count() > 1).SelectMany(g => g)]);
+	}
 
 	internal static Dictionary<AbsoluteFilePath, string> HashFiles(IReadOnlyList<AbsoluteFilePath> filePaths)
 	{

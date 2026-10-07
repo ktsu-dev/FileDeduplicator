@@ -45,9 +45,9 @@ internal sealed class DryRun : BaseVerb<DryRun>
 			return;
 		}
 
-		// Step 2: Hash all files in parallel
+		// Step 2: Hash, in parallel, every file whose size another file shares
 		Console.WriteLine("Hashing files...");
-		Dictionary<AbsoluteFilePath, string> fileHashes = FileHasher.HashFiles(files);
+		Dictionary<AbsoluteFilePath, string> fileHashes = FileHasher.HashPossibleDuplicates(files, out _);
 		Console.WriteLine();
 
 		// Step 3: Group by hash and find duplicates

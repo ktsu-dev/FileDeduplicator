@@ -46,9 +46,9 @@ internal sealed class Stats : BaseVerb<Stats>
 			return;
 		}
 
-		// Step 2: Hash all files
+		// Step 2: Hash every file whose size another file shares
 		Console.WriteLine("Hashing files...");
-		Dictionary<AbsoluteFilePath, string> fileHashes = FileHasher.HashFiles(files);
+		Dictionary<AbsoluteFilePath, string> fileHashes = FileHasher.HashPossibleDuplicates(files, out IReadOnlyList<AbsoluteFilePath> uniqueSize);
 		Console.WriteLine();
 
 		// Step 3: Compute statistics
@@ -61,13 +61,14 @@ internal sealed class Stats : BaseVerb<Stats>
 		DuplicateGroup[] duplicates = [.. allGroups.Where(Deduplicator.IsDeletable)];
 		int emptyCopies = allGroups.Where(g => !Deduplicator.IsDeletable(g)).Sum(g => g.Files.Count - 1);
 
-		// Every count below is taken over the files that hashed. HashFiles drops a file it cannot
+		// Every count below is taken over the files that hashed, plus those left unhashed because their
+		// size is unique and so are unique files without being read. HashFiles drops a file it cannot
 		// read, so counting against the scanned list would report each one as a duplicate of nothing,
 		// and sizing it would throw if it had vanished since the scan.
-		long totalSize = Deduplicator.TotalSize(fileHashes.Keys);
-		int uniqueFiles = hashGroups.Count;
-		int duplicateFiles = fileHashes.Count - uniqueFiles - emptyCopies;
-		int unreadableFiles = files.Count - fileHashes.Count;
+		long totalSize = Deduplicator.TotalSize(fileHashes.Keys.Concat(uniqueSize));
+		int uniqueFiles = hashGroups.Count + uniqueSize.Count;
+		int duplicateFiles = fileHashes.Count - hashGroups.Count - emptyCopies;
+		int unreadableFiles = files.Count - fileHashes.Count - uniqueSize.Count;
 
 		Console.WriteLine("=== FileDeduplicator Statistics ===");
 		Console.WriteLine();

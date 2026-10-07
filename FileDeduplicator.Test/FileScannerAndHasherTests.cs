@@ -403,4 +403,49 @@ public sealed class FileScannerAndHasherTests
 		mkfifo.WaitForExit();
 		Assert.AreEqual(0, mkfifo.ExitCode, $"mkfifo could not create {path}.");
 	}
+
+	/// <summary>
+	/// A file whose size no other file shares cannot have a duplicate, so it is never read.
+	/// </summary>
+	[TestMethod]
+	public void HashPossibleDuplicatesSkipsFilesWithAUniqueSize()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath[] files =
+		[
+			tree.Write("one.txt", "a"),
+			tree.Write("two.txt", "bb"),
+			tree.Write("three.txt", "ccc"),
+		];
+
+		// Act
+		Dictionary<AbsoluteFilePath, string> hashes = FileHasher.HashPossibleDuplicates(files, out IReadOnlyList<AbsoluteFilePath> uniqueSize);
+
+		// Assert
+		Assert.IsEmpty(hashes);
+		CollectionAssert.AreEquivalent(files, uniqueSize.ToArray());
+	}
+
+	/// <summary>
+	/// Files that share a size are hashed whatever their content, and empty files still group.
+	/// </summary>
+	[TestMethod]
+	public void HashPossibleDuplicatesHashesEveryFileThatSharesASize()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath sameA = tree.Write("a.txt", "ab");
+		AbsoluteFilePath sameB = tree.Write("b.txt", "cd");
+		AbsoluteFilePath emptyA = tree.Write("x/__init__.py", "");
+		AbsoluteFilePath emptyB = tree.Write("y/__init__.py", "");
+		AbsoluteFilePath alone = tree.Write("alone.txt", "unique length");
+
+		// Act
+		Dictionary<AbsoluteFilePath, string> hashes = FileHasher.HashPossibleDuplicates([sameA, sameB, emptyA, emptyB, alone], out IReadOnlyList<AbsoluteFilePath> uniqueSize);
+
+		// Assert
+		CollectionAssert.AreEquivalent(new[] { sameA, sameB, emptyA, emptyB }, hashes.Keys.ToArray());
+		CollectionAssert.AreEqual(new[] { alone }, uniqueSize.ToArray());
+	}
 }
