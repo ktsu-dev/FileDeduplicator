@@ -207,6 +207,59 @@ public sealed class VerbOutputTests
 	}
 
 	/// <summary>
+	/// Empty files are never deleted, so Stats does not count them as duplicates or wasted copies and
+	/// agrees with DryRun on how many files a run would remove (ktsu-dev/FileDeduplicator#172).
+	/// </summary>
+	[TestMethod]
+	public void StatsLeavesEmptyFilesOutOfTheDuplicates()
+	{
+		// Arrange -- the tree from the issue: four empty files and one 2-byte pair
+		using TempTree tree = new();
+		_ = tree.Write("a/__init__.py", string.Empty);
+		_ = tree.Write("b/__init__.py", string.Empty);
+		_ = tree.Write("c/__init__.py", string.Empty);
+		_ = tree.Write(".gitkeep", string.Empty);
+		_ = tree.Write("A.JPG", "xy");
+		_ = tree.Write("b/copy.jpg", "xy");
+
+		// Act
+		string output = ConsoleCapture.Normalize(ConsoleCapture.Run(new Stats { PathString = tree.Root.WeakString }));
+		string dryRun = ConsoleCapture.Normalize(ConsoleCapture.Run(new DryRun { PathString = tree.Root.WeakString }));
+
+		// Assert
+		Assert.Contains("Files to delete: 1", dryRun);
+		Assert.Contains("Duplicate files: 1", output);
+		Assert.Contains("Duplicate groups: 1", output);
+		Assert.Contains("Empty duplicates (never deleted): 3", output);
+		Assert.Contains("Duplicate files by extension:\n.jpg: 1 file(s)\n", output);
+		Assert.DoesNotContain(".py:", output);
+		Assert.DoesNotContain("0 B each", output, "An empty group was listed among the largest groups.");
+	}
+
+	/// <summary>
+	/// <c>.jpg</c> and <c>.JPG</c> copies are one kind of file and are counted under one extension.
+	/// </summary>
+	[TestMethod]
+	public void StatsCountsExtensionsThatDifferOnlyInCaseTogether()
+	{
+		// Arrange -- the keepers are the shorter names a.jpg, b.jpg and c.JPG
+		using TempTree tree = new();
+		_ = tree.Write("a.jpg", "first");
+		_ = tree.Write("a2.JPG", "first");
+		_ = tree.Write("b.jpg", "second");
+		_ = tree.Write("b2.jpg", "second");
+		_ = tree.Write("c.JPG", "third");
+		_ = tree.Write("c2.JPG", "third");
+
+		// Act
+		string output = ConsoleCapture.Normalize(ConsoleCapture.Run(new Stats { PathString = tree.Root.WeakString }));
+
+		// Assert
+		Assert.Contains("Duplicate files by extension:\n.jpg: 3 file(s)\n", output);
+		Assert.DoesNotContain(".JPG:", output);
+	}
+
+	/// <summary>
 	/// A file that cannot be hashed is named by its full path, so the failing copy can be found
 	/// among others sharing its file name.
 	/// </summary>

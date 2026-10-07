@@ -53,14 +53,20 @@ internal sealed class Stats : BaseVerb<Stats>
 
 		// Step 3: Compute statistics
 		Dictionary<string, List<AbsoluteFilePath>> hashGroups = Deduplicator.GroupByHash(fileHashes);
-		IReadOnlyList<DuplicateGroup> duplicates = Deduplicator.FindDuplicates(hashGroups);
+		IReadOnlyList<DuplicateGroup> allGroups = Deduplicator.FindDuplicates(hashGroups);
+
+		// Empty files group together but are never deleted (Deduplicator.IsDeletable), so counting
+		// them here reported dozens of __init__.py files as redundant copies that DryRun and
+		// Deduplicate would keep. They are reported on their own line instead.
+		DuplicateGroup[] duplicates = [.. allGroups.Where(Deduplicator.IsDeletable)];
+		int emptyCopies = allGroups.Where(g => !Deduplicator.IsDeletable(g)).Sum(g => g.Files.Count - 1);
 
 		// Every count below is taken over the files that hashed. HashFiles drops a file it cannot
 		// read, so counting against the scanned list would report each one as a duplicate of nothing,
 		// and sizing it would throw if it had vanished since the scan.
 		long totalSize = Deduplicator.TotalSize(fileHashes.Keys);
 		int uniqueFiles = hashGroups.Count;
-		int duplicateFiles = fileHashes.Count - uniqueFiles;
+		int duplicateFiles = fileHashes.Count - uniqueFiles - emptyCopies;
 		int unreadableFiles = files.Count - fileHashes.Count;
 
 		Console.WriteLine("=== FileDeduplicator Statistics ===");
@@ -74,9 +80,13 @@ internal sealed class Stats : BaseVerb<Stats>
 		Console.WriteLine($"Total size: {DuplicateReport.FormatBytes(totalSize)}");
 		Console.WriteLine($"Unique files: {uniqueFiles}");
 		Console.WriteLine($"Duplicate files: {duplicateFiles}");
-		Console.WriteLine($"Duplicate groups: {duplicates.Count}");
+		Console.WriteLine($"Duplicate groups: {duplicates.Length}");
+		if (emptyCopies > 0)
+		{
+			Console.WriteLine($"Empty duplicates (never deleted): {emptyCopies}");
+		}
 
-		if (duplicates.Count > 0)
+		if (duplicates.Length > 0)
 		{
 			long wastedSpace = duplicates.Sum(g => g.FileSize * (g.Files.Count - 1));
 			Console.WriteLine($"Wasted space: {DuplicateReport.FormatBytes(wastedSpace)}");
@@ -122,7 +132,8 @@ internal sealed class Stats : BaseVerb<Stats>
 			AbsoluteFilePath keeper = Deduplicator.SelectFileToKeep(group.Files);
 			IEnumerable<string> extensions = group.Files
 				.Where(f => f != keeper)
-				.Select(f => System.IO.Path.GetExtension(f.WeakString))
+				// Camera and phone folders mix .JPG and .jpg, which are one kind of file.
+				.Select(f => System.IO.Path.GetExtension(f.WeakString).ToLowerInvariant())
 				.Select(ext => string.IsNullOrEmpty(ext) ? "(no extension)" : ext);
 
 			foreach (string ext in extensions)
