@@ -30,6 +30,9 @@ Run without arguments to launch the interactive menu:
 FileDeduplicator
 ```
 
+On Windows the menu is navigated with the arrow keys. On Linux and macOS, and whenever input is piped
+in, it is a numbered list: type the number of a command, or `0` to exit.
+
 ### Commands
 
 ```sh
