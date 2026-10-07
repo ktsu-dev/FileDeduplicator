@@ -2,6 +2,9 @@
 
 namespace ktsu.FileDeduplicator.Test;
 
+using DustInTheWind.ConsoleTools.Controls;
+using DustInTheWind.ConsoleTools.Controls.Menus;
+
 using ktsu.FileDeduplicator.Verbs;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -65,5 +68,27 @@ public sealed class MenuTests
 
 		Assert.AreEqual(0, exitCode, output);
 		Assert.Contains("Not an option: 42", output);
+	}
+
+	/// <summary>
+	/// The scrolling menu used in an interactive Windows console has an Exit item whose command ends
+	/// the display loop, so it can be left without Ctrl+C.
+	/// </summary>
+	[TestMethod]
+	public void ScrollMenuHasAnExitItemThatClosesIt()
+	{
+		// Arrange
+		Menu menu = new();
+		ControlRepeater repeater = menu.BuildScrollMenu(out Menu.ExitCommand exit);
+
+		// Act
+		bool requestedBefore = exit.Requested;
+		exit.Execute();
+
+		// Assert
+		Assert.IsInstanceOfType<ScrollMenu>(repeater.Control);
+		Assert.IsTrue(exit.IsActive);
+		Assert.IsFalse(requestedBefore);
+		Assert.IsTrue(exit.Requested);
 	}
 }

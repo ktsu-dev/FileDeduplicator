@@ -36,6 +36,20 @@ internal sealed class Menu : BaseVerb<Menu>
 
 	private void RunScrollMenu()
 	{
+		ControlRepeater menuRepeater = BuildScrollMenu(out ExitCommand exit);
+		while (!exit.Requested)
+		{
+			menuRepeater.Display();
+		}
+	}
+
+	/// <summary>
+	/// Builds the scrolling menu: one item per verb, then Exit.
+	/// </summary>
+	/// <param name="exit">The Exit item's command, which says when the menu has been left.</param>
+	/// <returns>The repeater that displays the menu until Exit is chosen.</returns>
+	internal ControlRepeater BuildScrollMenu(out ExitCommand exit)
+	{
 		ScrollMenu scrollMenu = new()
 		{
 			HorizontalAlignment = HorizontalAlignment.Left,
@@ -48,16 +62,13 @@ internal sealed class Menu : BaseVerb<Menu>
 			Control = scrollMenu,
 		};
 
-		ExitCommand exit = new(menuRepeater);
+		exit = new(menuRepeater);
 		LabelMenuItem[] menuItems = [.. MenuVerbs.Select(CreateMenuItem)];
 
 		scrollMenu.AddItems(menuItems);
 		scrollMenu.AddItems([new LabelMenuItem() { Text = "Exit", Command = exit, IsEnabled = true }]);
 
-		while (!exit.Requested)
-		{
-			menuRepeater.Display();
-		}
+		return menuRepeater;
 	}
 
 	private void RunNumberedMenu()
@@ -119,7 +130,7 @@ internal sealed class Menu : BaseVerb<Menu>
 	/// The menu item that leaves the menu, which otherwise could only be left with Ctrl+C.
 	/// </summary>
 	/// <param name="repeater">The repeater to stop, which otherwise redisplays the menu indefinitely.</param>
-	private sealed class ExitCommand(ControlRepeater repeater) : ICommand
+	internal sealed class ExitCommand(ControlRepeater repeater) : ICommand
 	{
 		internal bool Requested { get; private set; }
 
