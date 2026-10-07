@@ -179,34 +179,55 @@ internal static class Deduplicator
 					continue;
 				}
 
-				try
+				if (TryDelete(file, errors, out long fileSize))
 				{
-					long fileSize = new FileInfo(file.WeakString).Length;
-					File.Delete(file.WeakString);
 					deletedCount++;
 					bytesReclaimed += fileSize;
-					Console.WriteLine($"  Deleted: {file}");
-				}
-				catch (IOException ex)
-				{
-					string error = $"  Error deleting {file}: {ex.Message}";
-					errors.Add(error);
-					Console.WriteLine(error);
-				}
-				// A copy the process is not allowed to remove -- read-only on Windows, or in a
-				// write-protected directory on Unix -- must cost that one file, not the rest of the
-				// run. Letting this escape would abandon every group after it, with no summary and
-				// no report of what was already deleted.
-				catch (UnauthorizedAccessException ex)
-				{
-					string error = $"  Error deleting {file}: {ex.Message}";
-					errors.Add(error);
-					Console.WriteLine(error);
 				}
 			}
 		}
 
 		return new DeduplicationResult(deletedCount, bytesReclaimed, errors, skipped);
+	}
+
+	/// <summary>
+	/// Deletes one confirmed duplicate, recording a failure instead of letting it end the run.
+	/// </summary>
+	/// <param name="file">The copy to delete.</param>
+	/// <param name="errors">The list to record a failure on.</param>
+	/// <param name="fileSize">The size of the deleted copy, when it was deleted.</param>
+	/// <returns><see langword="true"/> if the copy was deleted.</returns>
+	private static bool TryDelete(AbsoluteFilePath file, List<string> errors, out long fileSize)
+	{
+		try
+		{
+			fileSize = new FileInfo(file.WeakString).Length;
+			File.Delete(file.WeakString);
+			Console.WriteLine($"  Deleted: {file}");
+			return true;
+		}
+		catch (IOException ex)
+		{
+			RecordDeleteError(file, ex, errors);
+		}
+		// A copy the process is not allowed to remove -- read-only on Windows, or in a
+		// write-protected directory on Unix -- must cost that one file, not the rest of the
+		// run. Letting this escape would abandon every group after it, with no summary and
+		// no report of what was already deleted.
+		catch (UnauthorizedAccessException ex)
+		{
+			RecordDeleteError(file, ex, errors);
+		}
+
+		fileSize = 0;
+		return false;
+	}
+
+	private static void RecordDeleteError(AbsoluteFilePath file, Exception ex, List<string> errors)
+	{
+		string error = $"  Error deleting {file}: {ex.Message}";
+		errors.Add(error);
+		Console.WriteLine(error);
 	}
 
 	/// <summary>

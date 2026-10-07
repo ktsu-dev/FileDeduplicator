@@ -50,13 +50,9 @@ public sealed class SameFileTests
 	/// identity is read from in the runtime's file status structure.
 	/// </summary>
 	[TestMethod]
+	[OSCondition(OperatingSystems.Linux | OperatingSystems.OSX)]
 	public void TheUnixIndexIsTheInodeNumber()
 	{
-		if (OperatingSystem.IsWindows())
-		{
-			Assert.Inconclusive("Windows has no inode numbers to compare against.");
-		}
-
 		// Arrange
 		using TempTree tree = new();
 		AbsoluteFilePath file = tree.Write("file.txt", "content");
