@@ -85,7 +85,18 @@ internal static class FileScanner
 				continue;
 			}
 
-			files.Add(file.As<AbsoluteFilePath>());
+			// ktsu.Semantics.Paths rejects some names the file system accepts: '<', '>' and '|' are
+			// legal on Unix, and paths over 256 characters are routine under node_modules or deep
+			// build output. One such file must not abort the scan of the whole tree, so it is
+			// reported and skipped, the same way FileHasher handles a file it cannot read.
+			try
+			{
+				files.Add(file.As<AbsoluteFilePath>());
+			}
+			catch (ArgumentException ex)
+			{
+				Console.WriteLine($"  Skipped {file}: {ex.Message}");
+			}
 		}
 
 		return files;
