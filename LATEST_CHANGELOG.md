@@ -1,9 +1,7 @@
-## v1.3.16 (patch)
+## v1.3.17-pre.1 (prerelease)
 
-Changes since v1.3.15:
+Changes since v1.3.16:
 
-- Build the scroll menu apart from its display loop so it is tested ([@Claude](https://github.com/Claude))
-- Show a numbered menu on Linux and macOS instead of crashing [patch] ([@Claude](https://github.com/Claude))
-- Leave empty files out of the Stats duplicates and fold extension case [patch] ([@Claude](https://github.com/Claude))
-- Skip paths the path type rejects instead of aborting the scan [patch] ([@Claude](https://github.com/Claude))
+- Bump MSTest.Sdk from 4.4.1 to 4.5.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
