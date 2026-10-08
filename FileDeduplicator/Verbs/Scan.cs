@@ -34,25 +34,13 @@ internal sealed class Scan : BaseVerb<Scan>
 		Console.WriteLine($"Scanning: {options.Path}");
 		Console.WriteLine();
 
-		// Step 1: Discover all files
-		Console.WriteLine("Discovering files...");
-		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(options.Path);
-		Console.WriteLine($"Found {files.Count} file(s).");
-		Console.WriteLine();
-
-		if (files.Count == 0)
+		DuplicateScan? scan = DuplicateScan.Run(options.Path);
+		if (scan is null)
 		{
 			return;
 		}
 
-		// Step 2: Hash all files in parallel
-		Console.WriteLine("Hashing files...");
-		Dictionary<AbsoluteFilePath, string> fileHashes = FileHasher.HashFiles(files);
-		Console.WriteLine();
-
-		// Step 3: Group by hash and find duplicates
-		Dictionary<string, List<AbsoluteFilePath>> hashGroups = Deduplicator.GroupByHash(fileHashes);
-		IReadOnlyList<DuplicateGroup> duplicates = Deduplicator.FindDuplicates(hashGroups);
+		IReadOnlyList<DuplicateGroup> duplicates = scan.Duplicates;
 
 		if (duplicates.Count == 0)
 		{

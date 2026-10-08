@@ -122,6 +122,51 @@ public sealed class VerbOutputTests
 	}
 
 	/// <summary>
+	/// A tree where no two files are the same size has no duplicates, so nothing in it is read.
+	/// </summary>
+	[TestMethod]
+	public void ScanHashesNothingWhenEveryFileHasItsOwnSize()
+	{
+		// Arrange
+		using TempTree tree = new();
+		_ = tree.Write("a.txt", "a");
+		_ = tree.Write("b.txt", "bb");
+		_ = tree.Write("nested/c.txt", "ccc");
+
+		// Act
+		string output = ConsoleCapture.Normalize(ConsoleCapture.Run(new Scan { PathString = tree.Root.WeakString }));
+
+		// Assert
+		Assert.DoesNotContain("Hashed:", output);
+		Assert.Contains("No duplicate files found.", output);
+	}
+
+	/// <summary>
+	/// Stats still counts and sizes the files it skipped hashing because their size is unique.
+	/// </summary>
+	[TestMethod]
+	public void StatsCountsFilesWithAUniqueSizeAsUnique()
+	{
+		// Arrange
+		using TempTree tree = new();
+		_ = tree.Write("a.txt", "a");
+		_ = tree.Write("b.txt", "bb");
+		_ = tree.Write("nested/c.txt", "ccc");
+
+		// Act
+		string output = ConsoleCapture.Normalize(ConsoleCapture.Run(new Stats { PathString = tree.Root.WeakString }));
+
+		// Assert
+		Assert.DoesNotContain("Hashed:", output);
+		Assert.Contains("Total files: 3", output);
+		Assert.DoesNotContain("Unreadable files:", output);
+		Assert.Contains("Total size: 6 B", output);
+		Assert.Contains("Unique files: 3", output);
+		Assert.Contains("Duplicate files: 0", output);
+		Assert.Contains("Duplicate groups: 0", output);
+	}
+
+	/// <summary>
 	/// Stats counts the tree and breaks the duplicates down without touching anything.
 	/// </summary>
 	[TestMethod]
@@ -266,10 +311,10 @@ public sealed class VerbOutputTests
 	[TestMethod]
 	public void AHashingErrorNamesTheFullPath()
 	{
-		// Arrange
+		// Arrange -- the same length as its sibling, or it would never be read
 		using TempTree tree = new();
 		_ = tree.Write("one/IMG_0001.jpg", "alpha");
-		AbsoluteFilePath locked = tree.Write("two/IMG_0001.jpg", "beta");
+		AbsoluteFilePath locked = tree.Write("two/IMG_0001.jpg", "gamma");
 		using FileStream holder = new(locked.WeakString, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
 
 		// Act

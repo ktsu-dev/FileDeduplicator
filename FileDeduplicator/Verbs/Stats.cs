@@ -35,25 +35,14 @@ internal sealed class Stats : BaseVerb<Stats>
 		Console.WriteLine($"Analyzing: {options.Path}");
 		Console.WriteLine();
 
-		// Step 1: Discover all files
-		Console.WriteLine("Discovering files...");
-		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(options.Path);
-		Console.WriteLine($"Found {files.Count} file(s).");
-		Console.WriteLine();
-
-		if (files.Count == 0)
+		DuplicateScan? scan = DuplicateScan.Run(options.Path);
+		if (scan is null)
 		{
 			return;
 		}
 
-		// Step 2: Hash all files
-		Console.WriteLine("Hashing files...");
-		Dictionary<AbsoluteFilePath, string> fileHashes = FileHasher.HashFiles(files);
-		Console.WriteLine();
-
-		// Step 3: Compute statistics
-		Dictionary<string, List<AbsoluteFilePath>> hashGroups = Deduplicator.GroupByHash(fileHashes);
-		IReadOnlyList<DuplicateGroup> allGroups = Deduplicator.FindDuplicates(hashGroups);
+		// Compute statistics
+		IReadOnlyList<DuplicateGroup> allGroups = scan.Duplicates;
 
 		// Empty files group together but are never deleted (Deduplicator.IsDeletable), so counting
 		// them here reported dozens of __init__.py files as redundant copies that DryRun and
@@ -61,17 +50,18 @@ internal sealed class Stats : BaseVerb<Stats>
 		DuplicateGroup[] duplicates = [.. allGroups.Where(Deduplicator.IsDeletable)];
 		int emptyCopies = allGroups.Where(g => !Deduplicator.IsDeletable(g)).Sum(g => g.Files.Count - 1);
 
-		// Every count below is taken over the files that hashed. HashFiles drops a file it cannot
+		// Every count below is taken over the files that hashed, plus those left unhashed because their
+		// size is unique and so are unique files without being read. HashFiles drops a file it cannot
 		// read, so counting against the scanned list would report each one as a duplicate of nothing,
 		// and sizing it would throw if it had vanished since the scan.
-		long totalSize = Deduplicator.TotalSize(fileHashes.Keys);
-		int uniqueFiles = hashGroups.Count;
-		int duplicateFiles = fileHashes.Count - uniqueFiles - emptyCopies;
-		int unreadableFiles = files.Count - fileHashes.Count;
+		long totalSize = Deduplicator.TotalSize(scan.FileHashes.Keys.Concat(scan.UniqueSize));
+		int uniqueFiles = scan.HashGroups.Count + scan.UniqueSize.Count;
+		int duplicateFiles = scan.FileHashes.Count - scan.HashGroups.Count - emptyCopies;
+		int unreadableFiles = scan.Files.Count - scan.FileHashes.Count - scan.UniqueSize.Count;
 
 		Console.WriteLine("=== FileDeduplicator Statistics ===");
 		Console.WriteLine();
-		Console.WriteLine($"Total files: {files.Count}");
+		Console.WriteLine($"Total files: {scan.Files.Count}");
 		if (unreadableFiles > 0)
 		{
 			Console.WriteLine($"Unreadable files: {unreadableFiles}");
