@@ -61,6 +61,31 @@ public sealed class MenuTests
 		Assert.AreEqual(2, output.Split("0. Exit").Length - 1, "The menu was not offered again after the verb ran.");
 	}
 
+	/// <summary>
+	/// <c>FileDeduplicator -p dir</c> with no verb lands on the menu, and the verb chosen from it
+	/// works on that directory rather than asking for a path again -- every time it is chosen.
+	/// </summary>
+	[TestMethod]
+	public void MenuHandsItsPathToTheChosenVerb()
+	{
+		// Arrange
+		using TempTree tree = new();
+		_ = tree.Write("a.txt", "alpha");
+		_ = tree.Write("aa.txt", "alpha");
+		Type[] menuVerbs = [.. Program.Verbs.Where(t => t != typeof(Menu))];
+		int scan = Array.IndexOf(menuVerbs, typeof(Scan)) + 1;
+		Assert.IsGreaterThan(0, scan, "Scan is not on the menu.");
+
+		// Act -- no path on stdin: the only path is the one the menu was given
+		string output = ConsoleCapture.Run(new Menu { PathString = tree.Root.WeakString }, $"{scan}\n{scan}\n0\n", out int exitCode);
+
+		// Assert
+		Assert.AreEqual(0, exitCode, output);
+		Assert.DoesNotContain("Enter the path", output, $"The menu dropped its -p path and asked again. Output was:\n{output}");
+		Assert.AreEqual(2, output.Split($"Scanning: {tree.Root}").Length - 1, $"Scan did not work on the menu's path both times. Output was:\n{output}");
+		Assert.AreEqual(2, output.Split("Found 1 group(s) of duplicate files").Length - 1, output);
+	}
+
 	[TestMethod]
 	public void MenuRejectsAChoiceThatIsNotOnIt()
 	{

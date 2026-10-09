@@ -73,7 +73,7 @@ internal sealed class Menu : BaseVerb<Menu>
 
 	private void RunNumberedMenu()
 	{
-		BaseVerb[] verbs = [.. MenuVerbs.Select(CreateVerb)];
+		ICommand[] verbs = [.. MenuVerbs.Select(CreateCommand)];
 		string[] texts = [.. MenuVerbs.Select(DescribeVerb)];
 
 		while (true)
@@ -105,11 +105,23 @@ internal sealed class Menu : BaseVerb<Menu>
 		}
 	}
 
-	private static BaseVerb CreateVerb(Type verbType)
+	/// <summary>
+	/// Creates the command a menu entry runs: the verb, handed the menu's own <c>-p</c> path each
+	/// time it is chosen.
+	/// </summary>
+	/// <remarks>
+	/// The menu is the default verb, so <c>FileDeduplicator -p dir</c> lands here with the path set.
+	/// Dropping it would ask for the path again and invite a different one into a flow that can end
+	/// in deletion. It is re-applied on every run because <see cref="BaseVerb{T}.Run()"/> clears the
+	/// verb's path when it finishes.
+	/// </remarks>
+	/// <param name="verbType">The verb to run.</param>
+	/// <returns>The command that runs it.</returns>
+	private PresetPathCommand CreateCommand(Type verbType)
 	{
 		BaseVerb? verb = Activator.CreateInstance(verbType) as BaseVerb;
 		Debug.Assert(verb != null);
-		return verb;
+		return new(verb, () => PathString);
 	}
 
 	private static string DescribeVerb(Type verbType)
@@ -119,12 +131,28 @@ internal sealed class Menu : BaseVerb<Menu>
 		return string.IsNullOrEmpty(helpText) ? name : $"{name} - {helpText}";
 	}
 
-	private static LabelMenuItem CreateMenuItem(Type verbType) => new()
+	private LabelMenuItem CreateMenuItem(Type verbType) => new()
 	{
 		Text = DescribeVerb(verbType),
-		Command = CreateVerb(verbType),
+		Command = CreateCommand(verbType),
 		IsEnabled = true,
 	};
+
+	/// <summary>
+	/// Runs a verb with the path the menu was given, or with none so that the verb asks for one.
+	/// </summary>
+	/// <param name="verb">The verb to run.</param>
+	/// <param name="path">Reads the menu's path at the moment the verb runs.</param>
+	private sealed class PresetPathCommand(BaseVerb verb, Func<string?> path) : ICommand
+	{
+		public bool IsActive => verb.IsActive;
+
+		public void Execute()
+		{
+			verb.PathString = path();
+			verb.Execute();
+		}
+	}
 
 	/// <summary>
 	/// The menu item that leaves the menu, which otherwise could only be left with Ctrl+C.
