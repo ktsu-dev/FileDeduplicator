@@ -166,4 +166,29 @@ public sealed class DeduplicateConfirmationTests
 		Assert.Contains("Deleted 1 file(s).", output);
 		Assert.Contains("Reclaimed 5 B of disk space.", output);
 	}
+
+	/// <summary>
+	/// Empty files are never deleted, so a tree whose only duplicates are empty marker files has
+	/// nothing to approve: the verb says so, reads no answer, and succeeds.
+	/// </summary>
+	[TestMethod]
+	public void OnlyEmptyDuplicatesSkipTheConfirmationAndSucceed()
+	{
+		// Arrange -- the routine Python/git case: two empty __init__.py files and one unique file
+		using TempTree tree = new();
+		AbsoluteFilePath first = tree.Write("a/__init__.py", string.Empty);
+		AbsoluteFilePath second = tree.Write("b/__init__.py", string.Empty);
+		_ = tree.Write("u.txt", "unique");
+
+		// Act -- stdin is empty, as it is for a script with nothing piped in
+		string output = ConsoleCapture.Normalize(ConsoleCapture.Run(new Deduplicate { PathString = tree.Root.WeakString }, string.Empty, out int exitCode));
+
+		// Assert
+		Assert.AreEqual(0, exitCode, $"A run with nothing to delete reported failure. Output was:\n{output}");
+		Assert.Contains("Nothing to delete", output);
+		Assert.DoesNotContain("Proceed with deletion?", output, $"The verb asked to approve deleting nothing. Output was:\n{output}");
+		Assert.DoesNotContain("Aborted.", output);
+		Assert.IsTrue(TempTree.Exists(first), $"{first} is empty and should never have been touched.");
+		Assert.IsTrue(TempTree.Exists(second), $"{second} is empty and should never have been touched.");
+	}
 }

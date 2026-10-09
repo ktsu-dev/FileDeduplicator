@@ -52,6 +52,15 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 		// and DryRun already print this; the verb that actually deletes is the one that needs it.
 		DeletionPlan plan = DuplicateReport.PlanDeletions(duplicates);
 
+		// Empty files are never deleted, so a tree whose only duplicates are empty marker files
+		// (__init__.py, .gitkeep) has nothing to do. Asking to approve deleting zero files would
+		// read stdin for nothing, and declining it would report failure to a script.
+		if (plan.FileCount == 0)
+		{
+			Console.WriteLine("Nothing to delete (only empty-file duplicates found).");
+			return;
+		}
+
 		Console.WriteLine($"Found {duplicates.Count} group(s) of duplicate files.");
 		Console.WriteLine("Keeping the copy with the shortest filename in each group.");
 		Console.WriteLine();

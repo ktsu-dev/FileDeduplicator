@@ -439,4 +439,24 @@ public sealed class VerbOutputTests
 		string output = ConsoleCapture.Run(verb, stdin, out int exitCode);
 		return (output, exitCode);
 	}
+
+	/// <summary>
+	/// When every duplicate is empty, and so kept, Scan does not point at a Deduplicate run that
+	/// would have nothing to do.
+	/// </summary>
+	[TestMethod]
+	public void ScanDoesNotSuggestDeduplicateWhenOnlyEmptyDuplicatesExist()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath first = tree.Write("a/.gitkeep", string.Empty);
+		_ = tree.Write("b/.gitkeep", string.Empty);
+
+		// Act
+		string output = ConsoleCapture.Normalize(ConsoleCapture.Run(new Scan { PathString = tree.Root.WeakString }));
+
+		// Assert
+		Assert.Contains($"{first} [KEEP, empty]", output);
+		Assert.DoesNotContain("Run the 'Deduplicate' command", output, $"Scan suggested a Deduplicate run with nothing to delete. Output was:\n{output}");
+	}
 }

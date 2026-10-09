@@ -50,6 +50,7 @@ internal sealed class Scan : BaseVerb<Scan>
 
 		// Step 4: Display results
 		long totalWastedBytes = 0;
+		bool anyDeletable = false;
 		Console.WriteLine($"Found {duplicates.Count} group(s) of duplicate files:");
 		Console.WriteLine();
 
@@ -57,6 +58,7 @@ internal sealed class Scan : BaseVerb<Scan>
 		{
 			AbsoluteFilePath keeper = Deduplicator.SelectFileToKeep(group.Files);
 			bool deletable = Deduplicator.IsDeletable(group);
+			anyDeletable |= deletable;
 			long wastedBytes = group.FileSize * (group.Files.Count - 1);
 			totalWastedBytes += wastedBytes;
 
@@ -78,7 +80,13 @@ internal sealed class Scan : BaseVerb<Scan>
 
 		Console.WriteLine($"Total duplicate groups: {duplicates.Count}");
 		Console.WriteLine($"Total wasted space: {DuplicateReport.FormatBytes(totalWastedBytes)}");
-		Console.WriteLine();
-		Console.WriteLine("Run the 'Deduplicate' command to remove duplicates.");
+
+		// Empty duplicates are kept, so pointing at Deduplicate when they are all there is would
+		// send the user to a verb with nothing to do.
+		if (anyDeletable)
+		{
+			Console.WriteLine();
+			Console.WriteLine("Run the 'Deduplicate' command to remove duplicates.");
+		}
 	}
 }
