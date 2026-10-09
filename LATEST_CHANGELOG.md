@@ -1,6 +1,7 @@
-## v1.3.18-pre.1 (prerelease)
+## v1.3.18 (patch)
 
 Changes since v1.3.17:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Run the menu's verbs on the path given with -p instead of asking again [patch] ([@Claude](https://github.com/Claude))
+- Say nothing to delete instead of asking to delete zero files [patch] ([@Claude](https://github.com/Claude))
 
