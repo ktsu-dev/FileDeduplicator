@@ -1,294 +1,301 @@
+## v1.3.19-pre.2 (prerelease)
+
+Changes since v1.3.19-pre.1:
+
+- Bump ktsu.Semantics.Paths from 5.11.5 to 5.12.1 (dependabot[bot])
+- Bump Polyfill from 11.4.3 to 11.4.5 (dependabot[bot])
+
 ## v1.3.19-pre.1 (prerelease)
 
 Changes since v1.3.18:
 
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.3.18 (patch)
 
 Changes since v1.3.17:
 
-- Run the menu's verbs on the path given with -p instead of asking again [patch] ([@Claude](https://github.com/Claude))
-- Say nothing to delete instead of asking to delete zero files [patch] ([@Claude](https://github.com/Claude))
+- Run the menu's verbs on the path given with -p instead of asking again [patch] (Claude)
+- Say nothing to delete instead of asking to delete zero files [patch] (Claude)
 
 ## v1.3.18-pre.1 (prerelease)
 
 Changes since v1.3.17:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.3.17 (patch)
 
 Changes since v1.3.16:
 
-- Move the delete attempt out of DeleteDuplicates to bring its complexity under the limit ([@Claude](https://github.com/Claude))
-- Filter CollapseSameFile's sequence with Where rather than inside the loop ([@Claude](https://github.com/Claude))
-- Never treat one file reached at two paths as a duplicate of itself [patch] ([@Claude](https://github.com/Claude))
-- Run every verb's discover-and-hash steps through one DuplicateScan ([@Claude](https://github.com/Claude))
-- Hash only files whose size another file shares [patch] ([@Claude](https://github.com/Claude))
+- Move the delete attempt out of DeleteDuplicates to bring its complexity under the limit (Claude)
+- Filter CollapseSameFile's sequence with Where rather than inside the loop (Claude)
+- Never treat one file reached at two paths as a duplicate of itself [patch] (Claude)
+- Run every verb's discover-and-hash steps through one DuplicateScan (Claude)
+- Hash only files whose size another file shares [patch] (Claude)
 
 ## v1.3.17-pre.1 (prerelease)
 
 Changes since v1.3.16:
 
-- Bump MSTest.Sdk from 4.4.1 to 4.5.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump MSTest.Sdk from 4.4.1 to 4.5.1 (dependabot[bot])
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.3.16 (patch)
 
 Changes since v1.3.15:
 
-- Build the scroll menu apart from its display loop so it is tested ([@Claude](https://github.com/Claude))
-- Show a numbered menu on Linux and macOS instead of crashing [patch] ([@Claude](https://github.com/Claude))
-- Leave empty files out of the Stats duplicates and fold extension case [patch] ([@Claude](https://github.com/Claude))
-- Skip paths the path type rejects instead of aborting the scan [patch] ([@Claude](https://github.com/Claude))
+- Build the scroll menu apart from its display loop so it is tested (Claude)
+- Show a numbered menu on Linux and macOS instead of crashing [patch] (Claude)
+- Leave empty files out of the Stats duplicates and fold extension case [patch] (Claude)
+- Skip paths the path type rejects instead of aborting the scan [patch] (Claude)
 
 ## v1.3.15 (patch)
 
 Changes since v1.3.14:
 
-- Merge remote-tracking branch 'origin/main' into fix/exit-codes ([@Claude](https://github.com/Claude))
-- Check the root before a verb runs, so the exit code adds no lines to the copied pipeline ([@Claude](https://github.com/Claude))
-- Exit non-zero when a run fails, is aborted, or cannot parse its arguments [patch] ([@Claude](https://github.com/Claude))
+- Merge remote-tracking branch 'origin/main' into fix/exit-codes (Claude)
+- Check the root before a verb runs, so the exit code adds no lines to the copied pipeline (Claude)
+- Exit non-zero when a run fails, is aborted, or cannot parse its arguments [patch] (Claude)
 
 ## v1.3.14 (patch)
 
 Changes since v1.3.13:
 
-- Scan the current directory for an explicit -p . instead of prompting [patch] ([@Claude](https://github.com/Claude))
+- Scan the current directory for an explicit -p . instead of prompting [patch] (Claude)
 
 ## v1.3.13 (patch)
 
 Changes since v1.3.12:
 
-- Merge main into fix/stats-extension-breakdown ([@Claude](https://github.com/Claude))
-- Project redundant copies to their extensions with Select ([@Claude](https://github.com/Claude))
-- Extract the Stats extension breakdown into its own method ([@Claude](https://github.com/Claude))
-- Count each duplicate under its own extension in Stats [patch] ([@Claude](https://github.com/Claude))
+- Merge main into fix/stats-extension-breakdown (Claude)
+- Project redundant copies to their extensions with Select (Claude)
+- Extract the Stats extension breakdown into its own method (Claude)
+- Count each duplicate under its own extension in Stats [patch] (Claude)
 
 ## v1.3.12 (patch)
 
 Changes since v1.3.11:
 
-- Replace Scan's nested ternary and use Assert.DoesNotContain ([@Claude](https://github.com/Claude))
-- Name the full path of a file that fails to hash [patch] ([@Claude](https://github.com/Claude))
-- Report a file passed as the root instead of crashing [patch] ([@Claude](https://github.com/Claude))
-- Never delete empty files when deduplicating [patch] ([@Claude](https://github.com/Claude))
+- Replace Scan's nested ternary and use Assert.DoesNotContain (Claude)
+- Name the full path of a file that fails to hash [patch] (Claude)
+- Report a file passed as the root instead of crashing [patch] (Claude)
+- Never delete empty files when deduplicating [patch] (Claude)
 
 ## v1.3.12-pre.3 (prerelease)
 
 Changes since v1.3.12-pre.2:
 
-- Bump Polyfill from 11.4.1 to 11.4.3 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 11.4.1 to 11.4.3 (dependabot[bot])
 
 ## v1.3.12-pre.2 (prerelease)
 
 Changes since v1.3.12-pre.1:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.3.12-pre.1 (prerelease)
 
 Changes since v1.3.11:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.3.11 (patch)
 
 Changes since v1.3.10:
 
-- Filter vanished copies with an explicit Where, sizing each copy once ([@Claude](https://github.com/Claude))
-- fix: tolerate a file that vanishes during the hash pass [patch] ([@Claude](https://github.com/Claude))
+- Filter vanished copies with an explicit Where, sizing each copy once (Claude)
+- fix: tolerate a file that vanishes during the hash pass [patch] (Claude)
 
 ## v1.3.10 (patch)
 
 Changes since v1.3.9:
 
-- Move CI onto the shared ci-shared.yml pipeline ([@Claude](https://github.com/Claude))
+- Move CI onto the shared ci-shared.yml pipeline (Claude)
 
 ## v1.3.9 (patch)
 
 Changes since v1.3.8:
 
-- fix: skip named pipes, sockets and device nodes when scanning [patch] ([@Claude](https://github.com/Claude))
+- fix: skip named pipes, sockets and device nodes when scanning [patch] (Claude)
 
 ## v1.3.9-pre.1 (prerelease)
 
 Changes since v1.3.8:
 
-- Bump Polyfill from 11.4.0 to 11.4.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 11.4.0 to 11.4.1 (dependabot[bot])
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.3.8 (patch)
 
 Changes since v1.3.7:
 
-- fix: ask for a new path each time a menu verb runs [patch] ([@Claude](https://github.com/Claude))
-- fix: stop Stats counting files it could not hash as duplicates [patch] ([@Claude](https://github.com/Claude))
+- fix: ask for a new path each time a menu verb runs [patch] (Claude)
+- fix: stop Stats counting files it could not hash as duplicates [patch] (Claude)
 
 ## v1.3.7 (patch)
 
 Changes since v1.3.6:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.3.6 (patch)
 
 Changes since v1.3.5:
 
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.3.5 (patch)
 
 Changes since v1.3.4:
 
-- Bump the ktsu group with 10 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 10 updates (dependabot[bot])
 
 ## v1.3.4 (patch)
 
 Changes since v1.3.3:
 
-- Bump the ktsu group with 12 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 12 updates (dependabot[bot])
 
 ## v1.3.3 (patch)
 
 Changes since v1.3.2:
 
-- refactor: walk the scan with EnumerationOptions instead of a manual descent [patch] ([@Claude](https://github.com/Claude))
-- fix: survive an unreadable directory and a symlink cycle while scanning [patch] ([@Claude](https://github.com/Claude))
-- fix: skip a file the hashing pass cannot read instead of aborting [patch] ([@Claude](https://github.com/Claude))
+- refactor: walk the scan with EnumerationOptions instead of a manual descent [patch] (Claude)
+- fix: survive an unreadable directory and a symlink cycle while scanning [patch] (Claude)
+- fix: skip a file the hashing pass cannot read instead of aborting [patch] (Claude)
 
 ## v1.3.2 (patch)
 
 Changes since v1.3.1:
 
-- Bump Polyfill from 11.3.0 to 11.4.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 12 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 11.3.0 to 11.4.0 (dependabot[bot])
+- Bump the ktsu group with 12 updates (dependabot[bot])
 
 ## v1.3.1 (patch)
 
 Changes since v1.3.0:
 
-- fix: add AUTHORS.md so every identity keeps the ktsu. prefix [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- fix: add AUTHORS.md so every identity keeps the ktsu. prefix [patch] (matt-edmondson)
 
 ## v1.3.0 (minor)
 
 Changes since v1.2.0:
 
-- Cover the verbs whose output this change moved ([@Claude](https://github.com/Claude))
-- Show the files Deduplicate will delete before asking to confirm ([@Claude](https://github.com/Claude))
-- Gate Dependabot auto-merge on CI actually being green ([@Claude](https://github.com/Claude))
-- refactor: keep the IOException catch body as it was [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- fix: catch UnauthorizedAccessException when deleting a duplicate [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Cover the verbs whose output this change moved (Claude)
+- Show the files Deduplicate will delete before asking to confirm (Claude)
+- Gate Dependabot auto-merge on CI actually being green (Claude)
+- refactor: keep the IOException catch body as it was [patch] (matt-edmondson)
+- fix: catch UnauthorizedAccessException when deleting a duplicate [patch] (matt-edmondson)
 
 ## v1.2.6 (patch)
 
 Changes since v1.2.5:
 
-- Bump the ktsu group with 12 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 12 updates (dependabot[bot])
 
 ## v1.2.5 (patch)
 
 Changes since v1.2.4:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.2.4 (patch)
 
 Changes since v1.2.3:
 
-- Bump MSTest.Sdk from 4.4.0 to 4.4.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 12 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump MSTest.Sdk from 4.4.0 to 4.4.1 (dependabot[bot])
+- Bump the ktsu group with 12 updates (dependabot[bot])
 
 ## v1.2.3 (patch)
 
 Changes since v1.2.2:
 
-- Gate Dependabot auto-merge on CI actually being green ([@Claude](https://github.com/Claude))
+- Gate Dependabot auto-merge on CI actually being green (Claude)
 
 ## v1.2.2 (patch)
 
 Changes since v1.2.1:
 
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.2.1 (patch)
 
 Changes since v1.2.0:
 
-- refactor: keep the IOException catch body as it was [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- fix: catch UnauthorizedAccessException when deleting a duplicate [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- refactor: keep the IOException catch body as it was [patch] (matt-edmondson)
+- fix: catch UnauthorizedAccessException when deleting a duplicate [patch] (matt-edmondson)
 
 ## v1.2.0 (minor)
 
 Changes since v1.1.0:
 
-- refactor: lift the keeper-mismatch path out of DeleteDuplicates [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- test: cover the unreadable-path branch of the pre-delete verification [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- fix: re-verify each file's hash before deleting it [minor] ([@matt-edmondson](https://github.com/matt-edmondson))
-- ci: adopt the consolidated .NET workflow [patch] ([@Claude](https://github.com/Claude))
+- refactor: lift the keeper-mismatch path out of DeleteDuplicates [patch] (matt-edmondson)
+- test: cover the unreadable-path branch of the pre-delete verification [patch] (matt-edmondson)
+- fix: re-verify each file's hash before deleting it [minor] (matt-edmondson)
+- ci: adopt the consolidated .NET workflow [patch] (Claude)
 
 ## v1.1.12 (patch)
 
 Changes since v1.1.11:
 
-- Bump the ktsu group with 12 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 12 updates (dependabot[bot])
 
 ## v1.1.11 (patch)
 
 Changes since v1.1.10:
 
-- ci: adopt the consolidated .NET workflow [patch] ([@Claude](https://github.com/Claude))
+- ci: adopt the consolidated .NET workflow [patch] (Claude)
 
 ## v1.1.10 (patch)
 
 Changes since v1.1.9:
 
-- Bump Polyfill from 11.2.0 to 11.3.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 11.2.0 to 11.3.0 (dependabot[bot])
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.1.9 (patch)
 
 Changes since v1.1.8:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.1.8 (patch)
 
 Changes since v1.1.7:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.1.7 (patch)
 
 Changes since v1.1.6:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.1.6 (patch)
 
 Changes since v1.1.5:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.1.5 (patch)
 
 Changes since v1.1.4:
 
-- Bump MSTest.Sdk from 4.3.3 to 4.4.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump MSTest.Sdk from 4.3.3 to 4.4.0 (dependabot[bot])
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.1.4 (patch)
 
 Changes since v1.1.3:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.1.3 (patch)
 
 Changes since v1.1.2:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.1.2 (patch)
 
@@ -298,47 +305,47 @@ No significant changes detected since v1.1.1.
 
 Changes since v1.1.0:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.1.0 (minor)
 
 Changes since v1.0.0:
 
-- [minor] Add a test project ([@Claude](https://github.com/Claude))
-- ci: make the SonarQube quality gate opt in [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- ci: adopt the unified dotnet workflow [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- chore: store icon.png in LFS as .gitattributes declares ([@matt-edmondson](https://github.com/matt-edmondson))
-- docs: scope build badge to the default branch ([@matt-edmondson](https://github.com/matt-edmondson))
-- docs: correct README, DESCRIPTION and TAGS metadata ([@matt-edmondson](https://github.com/matt-edmondson))
-- Stop Update SDKs failing when there is nothing to update ([@matt-edmondson](https://github.com/matt-edmondson))
-- Fix build errors from ktsu.Sdk analyzer update [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- chore: update ktsu.Sdk to 2.21.1 [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- chore: remove Microsoft.SourceLink.GitHub package version ([@matt-edmondson](https://github.com/matt-edmondson))
-- feat: add ConsoleTools dependencies to FileDeduplicator ([@matt-edmondson](https://github.com/matt-edmondson))
+- [minor] Add a test project (Claude)
+- ci: make the SonarQube quality gate opt in [patch] (matt-edmondson)
+- ci: adopt the unified dotnet workflow [patch] (matt-edmondson)
+- chore: store icon.png in LFS as .gitattributes declares (matt-edmondson)
+- docs: scope build badge to the default branch (matt-edmondson)
+- docs: correct README, DESCRIPTION and TAGS metadata (matt-edmondson)
+- Stop Update SDKs failing when there is nothing to update (matt-edmondson)
+- Fix build errors from ktsu.Sdk analyzer update [patch] (matt-edmondson)
+- chore: update ktsu.Sdk to 2.21.1 [patch] (matt-edmondson)
+- chore: remove Microsoft.SourceLink.GitHub package version (matt-edmondson)
+- feat: add ConsoleTools dependencies to FileDeduplicator (matt-edmondson)
 
 ## v1.0.46 (patch)
 
 Changes since v1.0.45:
 
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.0.45 (patch)
 
 Changes since v1.0.44:
 
-- ci: make the SonarQube quality gate opt in [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- ci: make the SonarQube quality gate opt in [patch] (matt-edmondson)
 
 ## v1.0.44 (patch)
 
 Changes since v1.0.43:
 
-- ci: adopt the unified dotnet workflow [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- ci: adopt the unified dotnet workflow [patch] (matt-edmondson)
 
 ## v1.0.43 (patch)
 
 Changes since v1.0.42:
 
-- Bump the ktsu group with 11 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 11 updates (dependabot[bot])
 
 ## v1.0.42 (patch)
 
@@ -348,455 +355,455 @@ No significant changes detected since v1.0.41.
 
 Changes since v1.0.40:
 
-- Bump the ktsu group with 10 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 10 updates (dependabot[bot])
 
 ## v1.0.40 (patch)
 
 Changes since v1.0.39:
 
-- Bump the ktsu group with 12 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 12 updates (dependabot[bot])
 
 ## v1.0.39 (patch)
 
 Changes since v1.0.38:
 
-- Bump the ktsu group with 12 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 12 updates (dependabot[bot])
 
 ## v1.0.38 (patch)
 
 Changes since v1.0.37:
 
-- chore: store icon.png in LFS as .gitattributes declares ([@matt-edmondson](https://github.com/matt-edmondson))
-- docs: scope build badge to the default branch ([@matt-edmondson](https://github.com/matt-edmondson))
-- docs: correct README, DESCRIPTION and TAGS metadata ([@matt-edmondson](https://github.com/matt-edmondson))
+- chore: store icon.png in LFS as .gitattributes declares (matt-edmondson)
+- docs: scope build badge to the default branch (matt-edmondson)
+- docs: correct README, DESCRIPTION and TAGS metadata (matt-edmondson)
 
 ## v1.0.37 (patch)
 
 Changes since v1.0.36:
 
-- Bump the ktsu group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 1 update (dependabot[bot])
 
 ## v1.0.36 (patch)
 
 Changes since v1.0.35:
 
-- Stop Update SDKs failing when there is nothing to update ([@matt-edmondson](https://github.com/matt-edmondson))
+- Stop Update SDKs failing when there is nothing to update (matt-edmondson)
 
 ## v1.0.35 (patch)
 
 Changes since v1.0.34:
 
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.0.34 (patch)
 
 Changes since v1.0.33:
 
-- Fix build errors from ktsu.Sdk analyzer update [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Fix build errors from ktsu.Sdk analyzer update [patch] (matt-edmondson)
 
 ## v1.0.33 (patch)
 
 Changes since v1.0.32:
 
-- Bump the ktsu group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 1 update (dependabot[bot])
 
 ## v1.0.32 (patch)
 
 Changes since v1.0.31:
 
-- chore: update ktsu.Sdk to 2.21.1 [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- chore: update ktsu.Sdk to 2.21.1 [patch] (matt-edmondson)
 
 ## v1.0.31 (patch)
 
 Changes since v1.0.30:
 
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Sync .github\workflows\dotnet.yml (ktsu[bot])
+- Sync global.json (ktsu[bot])
 
 ## v1.0.30 (patch)
 
 Changes since v1.0.29:
 
-- Bump the ktsu group with 11 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 11 updates (dependabot[bot])
 
 ## v1.0.29 (patch)
 
 Changes since v1.0.28:
 
-- Sync .github\workflows\update-sdks.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dependabot-merge.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .gitattributes ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Sync .github\workflows\update-sdks.yml (ktsu[bot])
+- Sync .github\workflows\dotnet.yml (ktsu[bot])
+- Sync .github\workflows\dependabot-merge.yml (ktsu[bot])
+- Sync .gitattributes (ktsu[bot])
 
 ## v1.0.28 (patch)
 
 Changes since v1.0.27:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.27 (patch)
 
 Changes since v1.0.26:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.26 (patch)
 
 Changes since v1.0.25:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.25 (patch)
 
 Changes since v1.0.24:
 
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.0.24 (patch)
 
 Changes since v1.0.23:
 
-- Bump MSTest.Sdk from 4.3.2 to 4.3.3 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump MSTest.Sdk from 4.3.2 to 4.3.3 (dependabot[bot])
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.23 (patch)
 
 Changes since v1.0.22:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.22 (patch)
 
 Changes since v1.0.21:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.21 (patch)
 
 Changes since v1.0.20:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.20 (patch)
 
 Changes since v1.0.19:
 
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.0.19 (patch)
 
 Changes since v1.0.18:
 
-- Bump the ktsu group with 10 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 10 updates (dependabot[bot])
 
 ## v1.0.18 (patch)
 
 Changes since v1.0.17:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.17 (patch)
 
 Changes since v1.0.16:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.16 (patch)
 
 Changes since v1.0.15:
 
-- Bump the ktsu group with 4 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 4 updates (dependabot[bot])
 
 ## v1.0.15 (patch)
 
 Changes since v1.0.14:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.14 (patch)
 
 Changes since v1.0.13:
 
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.0.13 (patch)
 
 Changes since v1.0.12:
 
-- Bump MSTest.Sdk from 4.3.0 to 4.3.2 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump MSTest.Sdk from 4.3.0 to 4.3.2 (dependabot[bot])
 
 ## v1.0.12 (patch)
 
 Changes since v1.0.11:
 
-- Bump MSTest.Sdk from 4.2.3 to 4.3.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump MSTest.Sdk from 4.2.3 to 4.3.0 (dependabot[bot])
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.0.11 (patch)
 
 Changes since v1.0.10:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.10 (patch)
 
 Changes since v1.0.9:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.9 (patch)
 
 Changes since v1.0.8:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.8 (patch)
 
 Changes since v1.0.7:
 
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.0.7 (patch)
 
 Changes since v1.0.6:
 
-- Bump the ktsu group with 12 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 12 updates (dependabot[bot])
 
 ## v1.0.6 (patch)
 
 Changes since v1.0.5:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.5 (patch)
 
 Changes since v1.0.4:
 
-- Bump the ktsu group with 11 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 11 updates (dependabot[bot])
 
 ## v1.0.4 (patch)
 
 Changes since v1.0.3:
 
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Sync .github\workflows\dotnet.yml (ktsu[bot])
+- Sync global.json (ktsu[bot])
 
 ## v1.0.3 (patch)
 
 Changes since v1.0.2:
 
-- chore: remove Microsoft.SourceLink.GitHub package version ([@matt-edmondson](https://github.com/matt-edmondson))
-- feat: add ConsoleTools dependencies to FileDeduplicator ([@matt-edmondson](https://github.com/matt-edmondson))
+- chore: remove Microsoft.SourceLink.GitHub package version (matt-edmondson)
+- feat: add ConsoleTools dependencies to FileDeduplicator (matt-edmondson)
 
 ## v1.0.2 (patch)
 
 Changes since v1.0.1:
 
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.0.1 (patch)
 
 Changes since v1.0.0:
 
-- Sync .github\workflows\update-sdks.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\dependabot.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .gitignore ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .gitattributes ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Bump Polyfill from 10.8.0 to 10.8.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump Polyfill from 10.7.0 to 10.8.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump Polyfill from 10.6.0 to 10.7.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump Polyfill from 10.5.1 to 10.6.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump MSTest.Sdk from 4.2.2 to 4.2.3 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the microsoft group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Sync .github\workflows\update-sdks.yml (ktsu[bot])
+- Sync .github\workflows\dotnet.yml (ktsu[bot])
+- Sync .github\dependabot.yml (ktsu[bot])
+- Sync .gitignore (ktsu[bot])
+- Sync .gitattributes (ktsu[bot])
+- Sync global.json (ktsu[bot])
+- Bump Polyfill from 10.8.0 to 10.8.1 (dependabot[bot])
+- Bump the ktsu group with 3 updates (dependabot[bot])
+- Bump Polyfill from 10.7.0 to 10.8.0 (dependabot[bot])
+- Bump Polyfill from 10.6.0 to 10.7.0 (dependabot[bot])
+- Bump Polyfill from 10.5.1 to 10.6.0 (dependabot[bot])
+- Bump MSTest.Sdk from 4.2.2 to 4.2.3 (dependabot[bot])
+- Bump the microsoft group with 1 update (dependabot[bot])
 
 ## v1.0.1-pre.6 (prerelease)
 
 Changes since v1.0.1-pre.5:
 
-- Bump Polyfill from 10.8.0 to 10.8.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 3 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 10.8.0 to 10.8.1 (dependabot[bot])
+- Bump the ktsu group with 3 updates (dependabot[bot])
 
 ## v1.0.1-pre.5 (prerelease)
 
 Changes since v1.0.1-pre.4:
 
-- Bump Polyfill from 10.7.0 to 10.8.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 10.7.0 to 10.8.0 (dependabot[bot])
 
 ## v1.0.1-pre.4 (prerelease)
 
 Changes since v1.0.1-pre.3:
 
-- Bump Polyfill from 10.6.0 to 10.7.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 10.6.0 to 10.7.0 (dependabot[bot])
 
 ## v1.0.1-pre.3 (prerelease)
 
 Changes since v1.0.1-pre.2:
 
-- Bump Polyfill from 10.5.1 to 10.6.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 10.5.1 to 10.6.0 (dependabot[bot])
 
 ## v1.0.1-pre.2 (prerelease)
 
 Changes since v1.0.1-pre.1:
 
-- Bump MSTest.Sdk from 4.2.2 to 4.2.3 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump MSTest.Sdk from 4.2.2 to 4.2.3 (dependabot[bot])
 
 ## v1.0.1-pre.1 (prerelease)
 
 Changes since v1.0.0:
 
-- Bump the microsoft group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the microsoft group with 1 update (dependabot[bot])
 
 ## v1.0.0
 
 Changes since v1.0.0-pre.24:
 
-- Add TAGS.md with NuGet package tags ([@matt-edmondson](https://github.com/matt-edmondson))
+- Add TAGS.md with NuGet package tags (matt-edmondson)
 
 ## v1.0.0-pre.24 (prerelease)
 
 Changes since v1.0.0-pre.23:
 
-- Bump Polyfill from 10.5.0 to 10.5.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 10.5.0 to 10.5.1 (dependabot[bot])
 
 ## v1.0.0-pre.23 (prerelease)
 
 Changes since v1.0.0-pre.22:
 
-- Bump Polyfill from 10.4.0 to 10.5.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 10.4.0 to 10.5.0 (dependabot[bot])
 
 ## v1.0.0-pre.22 (prerelease)
 
 Changes since v1.0.0-pre.21:
 
-- Bump Polyfill from 10.3.0 to 10.4.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 10.3.0 to 10.4.0 (dependabot[bot])
 
 ## v1.0.0-pre.21 (prerelease)
 
 Changes since v1.0.0-pre.20:
 
-- Bump MSTest.Sdk from 4.2.1 to 4.2.2 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump MSTest.Sdk from 4.2.1 to 4.2.2 (dependabot[bot])
 
 ## v1.0.0-pre.20 (prerelease)
 
 Changes since v1.0.0-pre.19:
 
-- Bump the microsoft group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the microsoft group with 1 update (dependabot[bot])
 
 ## v1.0.0-pre.19 (prerelease)
 
 Changes since v1.0.0-pre.18:
 
-- Bump the microsoft group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the microsoft group with 1 update (dependabot[bot])
 
 ## v1.0.0-pre.18 (prerelease)
 
 Changes since v1.0.0-pre.17:
 
-- Bump Polyfill from 10.2.0 to 10.3.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 10.2.0 to 10.3.0 (dependabot[bot])
 
 ## v1.0.0-pre.17 (prerelease)
 
 Changes since v1.0.0-pre.16:
 
-- Bump Polyfill from 10.1.1 to 10.2.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 10.1.1 to 10.2.0 (dependabot[bot])
 
 ## v1.0.0-pre.16 (prerelease)
 
 Changes since v1.0.0-pre.15:
 
-- Bump Polyfill from 10.0.0 to 10.1.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 10.0.0 to 10.1.1 (dependabot[bot])
 
 ## v1.0.0-pre.15 (prerelease)
 
 Changes since v1.0.0-pre.14:
 
-- Bump MSTest.Sdk from 4.1.0 to 4.2.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump MSTest.Sdk from 4.1.0 to 4.2.1 (dependabot[bot])
 
 ## v1.0.0-pre.14 (prerelease)
 
 Changes since v1.0.0-pre.13:
 
-- Bump Polyfill from 9.24.0 to 10.0.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.24.0 to 10.0.0 (dependabot[bot])
 
 ## v1.0.0-pre.13 (prerelease)
 
 Changes since v1.0.0-pre.12:
 
-- Bump Polyfill from 9.23.0 to 9.24.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.23.0 to 9.24.0 (dependabot[bot])
 
 ## v1.0.0-pre.12 (prerelease)
 
 Changes since v1.0.0-pre.11:
 
-- Bump Polyfill from 9.22.0 to 9.23.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.22.0 to 9.23.0 (dependabot[bot])
 
 ## v1.0.0-pre.11 (prerelease)
 
 Changes since v1.0.0-pre.10:
 
-- Bump Polyfill from 9.18.0 to 9.22.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.18.0 to 9.22.0 (dependabot[bot])
 
 ## v1.0.0-pre.10 (prerelease)
 
 Changes since v1.0.0-pre.9:
 
-- Bump the microsoft group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the microsoft group with 1 update (dependabot[bot])
 
 ## v1.0.0-pre.9 (prerelease)
 
 Changes since v1.0.0-pre.8:
 
-- Bump the microsoft group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the microsoft group with 1 update (dependabot[bot])
 
 ## v1.0.0-pre.8 (prerelease)
 
 Changes since v1.0.0-pre.7:
 
-- Bump Polyfill from 9.17.0 to 9.18.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.17.0 to 9.18.0 (dependabot[bot])
 
 ## v1.0.0-pre.7 (prerelease)
 
 Changes since v1.0.0-pre.6:
 
-- Bump Polyfill from 9.13.0 to 9.17.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.13.0 to 9.17.0 (dependabot[bot])
 
 ## v1.0.0-pre.6 (prerelease)
 
 Changes since v1.0.0-pre.5:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.0-pre.5 (prerelease)
 
 Changes since v1.0.0-pre.4:
 
-- Bump Polyfill from 9.12.0 to 9.13.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.12.0 to 9.13.0 (dependabot[bot])
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.0-pre.4 (prerelease)
 
 Changes since v1.0.0-pre.3:
 
-- Bump Polyfill from 9.11.0 to 9.12.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.11.0 to 9.12.0 (dependabot[bot])
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.0-pre.3 (prerelease)
 
 Changes since v1.0.0-pre.2:
 
-- Bump Polyfill from 9.10.0 to 9.11.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.10.0 to 9.11.0 (dependabot[bot])
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.0.0-pre.2 (prerelease)
 
 Changes since v1.0.0-pre.1:
 
-- Bump Polyfill from 9.9.0 to 9.10.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.9.0 to 9.10.0 (dependabot[bot])
 
 ## v1.0.0-pre.1 (prerelease)
 
-- Initial commit ([@matt-edmondson](https://github.com/matt-edmondson))
+- Initial commit (matt-edmondson)
 
