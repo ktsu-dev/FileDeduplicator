@@ -1,3 +1,9 @@
+## v1.3.19 (patch)
+
+Changes since v1.3.18:
+
+- Count a hardlinked file once in Stats [patch] (Claude)
+
 ## v1.3.19-pre.2 (prerelease)
 
 Changes since v1.3.19-pre.1:
