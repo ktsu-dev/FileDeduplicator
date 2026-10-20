@@ -118,6 +118,55 @@ public sealed class SameFileTests
 	}
 
 	/// <summary>
+	/// Stats counts a file and its hardlink as one file: no duplicate, and its size once.
+	/// </summary>
+	[TestMethod]
+	public void StatsCountsAFileAndItsHardlinkAsOneFile()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath original = tree.Write("a.txt", "hello\n");
+		_ = MakeHardLink(tree, original, "b.txt");
+		_ = tree.Write("c.txt", "world-unique-123\n");
+
+		// Act
+		string output = ConsoleCapture.Normalize(ConsoleCapture.Run(new Stats { PathString = tree.Root.WeakString }));
+
+		// Assert -- 6 B for a.txt once, plus 17 B for c.txt
+		Assert.Contains("Total files: 3", output);
+		Assert.Contains("Total size: 23 B", output);
+		Assert.Contains("Unique files: 2", output);
+		Assert.Contains("Duplicate files: 0", output);
+		Assert.Contains("Duplicate groups: 0", output);
+		Assert.Contains("Extra paths to the same file (counted once): 1", output);
+	}
+
+	/// <summary>
+	/// With a genuine copy and a hardlink pair, Stats' duplicate count agrees with its own extension
+	/// breakdown and with what DryRun would delete.
+	/// </summary>
+	[TestMethod]
+	public void StatsAgreesWithDryRunForACopyAndAHardlinkPair()
+	{
+		// Arrange
+		using TempTree tree = new();
+		_ = tree.Write("k.bin", "duplicate content");
+		AbsoluteFilePath copy = tree.Write("sub/copy-long-name.bin", "duplicate content");
+		_ = MakeHardLink(tree, copy, "sub/copy-long-name-2.bin");
+
+		// Act
+		string stats = ConsoleCapture.Normalize(ConsoleCapture.Run(new Stats { PathString = tree.Root.WeakString }));
+		string dryRun = ConsoleCapture.Normalize(ConsoleCapture.Run(new DryRun { PathString = tree.Root.WeakString }));
+
+		// Assert -- two 17-byte files on disk, one of them redundant
+		Assert.Contains("Total size: 34 B", stats);
+		Assert.Contains("Duplicate files: 1", stats);
+		Assert.Contains("Duplicate groups: 1", stats);
+		Assert.Contains(".bin: 1 file(s)", stats);
+		Assert.Contains("Files to delete: 1", dryRun);
+	}
+
+	/// <summary>
 	/// The deletion loop refuses a path that leads to the keeper's own file, whatever grouping it is
 	/// handed, and reports it instead.
 	/// </summary>

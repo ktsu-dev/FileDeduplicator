@@ -54,9 +54,15 @@ internal sealed class Stats : BaseVerb<Stats>
 		// size is unique and so are unique files without being read. HashFiles drops a file it cannot
 		// read, so counting against the scanned list would report each one as a duplicate of nothing,
 		// and sizing it would throw if it had vanished since the scan.
-		long totalSize = Deduplicator.TotalSize(scan.FileHashes.Keys.Concat(scan.UniqueSize));
+		//
+		// Paths that lead to one file (a hardlink, a bind mount) are counted and sized once, as the
+		// other verbs do through FindDuplicates. Counting them per path reported a hardlink as a
+		// duplicate that DryRun and Deduplicate would never delete, and its size twice.
+		AbsoluteFilePath[] hashedFiles = [.. scan.HashGroups.Values.SelectMany(Deduplicator.CollapseSameFile)];
+		long totalSize = Deduplicator.TotalSize(hashedFiles.Concat(scan.UniqueSize));
 		int uniqueFiles = scan.HashGroups.Count + scan.UniqueSize.Count;
-		int duplicateFiles = scan.FileHashes.Count - scan.HashGroups.Count - emptyCopies;
+		int duplicateFiles = duplicates.Sum(g => g.Files.Count - 1);
+		int sameFilePaths = scan.FileHashes.Count - hashedFiles.Length;
 		int unreadableFiles = scan.Files.Count - scan.FileHashes.Count - scan.UniqueSize.Count;
 
 		Console.WriteLine("=== FileDeduplicator Statistics ===");
@@ -74,6 +80,11 @@ internal sealed class Stats : BaseVerb<Stats>
 		if (emptyCopies > 0)
 		{
 			Console.WriteLine($"Empty duplicates (never deleted): {emptyCopies}");
+		}
+
+		if (sameFilePaths > 0)
+		{
+			Console.WriteLine($"Extra paths to the same file (counted once): {sameFilePaths}");
 		}
 
 		if (duplicates.Length > 0)

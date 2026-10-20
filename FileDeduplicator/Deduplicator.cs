@@ -75,7 +75,7 @@ internal static class Deduplicator
 	/// drops, or it cannot be inspected, and the deletion guard in <see cref="DeleteDuplicates"/>
 	/// still stands between it and the keeper.
 	/// </remarks>
-	private static IEnumerable<AbsoluteFilePath> CollapseSameFile(IEnumerable<AbsoluteFilePath> paths)
+	internal static IEnumerable<AbsoluteFilePath> CollapseSameFile(IEnumerable<AbsoluteFilePath> paths)
 	{
 		HashSet<FileIdentity> seen = [];
 
