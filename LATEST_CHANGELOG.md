@@ -1,6 +1,6 @@
-## v1.3.19 (patch)
+## v1.3.20-pre.1 (prerelease)
 
-Changes since v1.3.18:
+Changes since v1.3.19:
 
-- Count a hardlinked file once in Stats [patch] (Claude)
+- Bump MSTest.Sdk from 4.5.1 to 4.5.2 (dependabot[bot])
 
