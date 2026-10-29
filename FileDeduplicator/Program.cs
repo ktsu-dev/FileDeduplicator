@@ -24,8 +24,24 @@ internal static class Program
 	private static int Main(string[] args)
 	{
 		Console.OutputEncoding = Encoding.UTF8;
-		return Run(Parser.Default, args);
+		using Parser parser = CreateParser(Console.Error);
+		return Run(parser, args);
 	}
+
+	/// <summary>
+	/// Creates the parser <see cref="Main"/> uses.
+	/// </summary>
+	/// <remarks>
+	/// Verb names match in any case. Otherwise <c>scan -p dir</c> names no verb, falls through to the
+	/// default Menu verb, and exits 0 without scanning (ktsu-dev/FileDeduplicator#195).
+	/// </remarks>
+	/// <param name="helpWriter">Where help and parse errors are written.</param>
+	/// <returns>The parser.</returns>
+	internal static Parser CreateParser(TextWriter helpWriter) => new(settings =>
+	{
+		settings.CaseSensitive = false;
+		settings.HelpWriter = helpWriter;
+	});
 
 	/// <summary>
 	/// Parses <paramref name="args"/> with <paramref name="parser"/> and runs the verb they name.
