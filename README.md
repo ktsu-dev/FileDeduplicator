@@ -63,6 +63,8 @@ When duplicates are found, the file with the **shortest filename** is kept. If t
 
 Empty files are reported as a group but never deleted. Deleting one frees nothing, and an empty file such as `__init__.py`, `.gitkeep` or `py.typed` usually matters because it exists.
 
+Version-control metadata is never scanned. The `.git`, `.svn`, `.hg` and `.bzr` directories under the root are skipped, because their small files are routinely identical by design: every branch ref pointing at the same commit has the same content, and deleting one deletes the branch.
+
 One file reached at two paths is not a duplicate of itself. A hardlink, a bind mount, or a share mounted twice gives one file several paths, and deleting one of them either deletes the copy being kept or frees nothing. Such paths are counted as one file, and deletion never removes a path that leads to the kept file.
 
 For example, given these duplicates:
