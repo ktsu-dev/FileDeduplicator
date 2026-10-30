@@ -4,6 +4,7 @@ namespace ktsu.FileDeduplicator;
 
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 
 using ktsu.Semantics.Paths;
 using ktsu.Semantics.Strings;
@@ -43,6 +44,24 @@ internal static class FileScanner
 	};
 
 	/// <summary>
+	/// Version-control metadata directories the walk never descends into.
+	/// </summary>
+	/// <remarks>
+	/// Inside <c>.git</c>, every branch ref pointing at the same commit has identical content, and so
+	/// do the reflogs of branches created together. Treating those as duplicates deleted branches to
+	/// reclaim a few hundred bytes (ktsu-dev/FileDeduplicator#192). Matched on the directory's own
+	/// name, ignoring case, so a file whose path merely contains ".git" is still scanned, and so is a
+	/// <c>.git</c> <em>file</em> (the pointer a worktree or submodule leaves), which is not a directory.
+	/// </remarks>
+	private static readonly HashSet<string> VersionControlDirectories = new(StringComparer.OrdinalIgnoreCase)
+	{
+		".git",
+		".svn",
+		".hg",
+		".bzr",
+	};
+
+	/// <summary>
 	/// Checks that <paramref name="path"/> is a directory that can be scanned, and says why in one
 	/// line when it is not.
 	/// </summary>
@@ -75,8 +94,17 @@ internal static class FileScanner
 			return [];
 		}
 
+		FileSystemEnumerable<string> walk = new(
+			path.WeakString,
+			(ref entry) => entry.ToFullPath(),
+			WalkOptions)
+		{
+			ShouldIncludePredicate = (ref entry) => !entry.IsDirectory,
+			ShouldRecursePredicate = (ref entry) => !VersionControlDirectories.Contains(entry.FileName.ToString()),
+		};
+
 		List<AbsoluteFilePath> files = [];
-		foreach (string file in Directory.EnumerateFiles(path.WeakString, "*", WalkOptions))
+		foreach (string file in walk)
 		{
 			// On Unix the enumeration also yields named pipes, sockets and device nodes. Opening a
 			// pipe to hash it blocks until a writer appears, and none of them is a copy of anything.
