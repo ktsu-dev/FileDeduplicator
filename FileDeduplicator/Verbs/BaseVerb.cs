@@ -19,6 +19,14 @@ internal abstract class BaseVerb : ICommand
 	[Option('p', "path", Required = false, HelpText = "The root path to scan for files.")]
 	public string? PathString { get; set; }
 
+	/// <summary>
+	/// Gets or sets the positional arguments on the command line, which no verb takes. The parser would
+	/// otherwise drop them silently: an unknown verb name lands here on the default Menu verb, and a
+	/// path given without <c>-p</c> would leave the verb prompting for one.
+	/// </summary>
+	[Value(0, Hidden = true)]
+	public IEnumerable<string> UnexpectedArguments { get; set; } = [];
+
 	public abstract bool IsActive { get; }
 
 	internal AbsoluteDirectoryPath Path => System.IO.Path.GetFullPath(PathString ?? ".").As<AbsoluteDirectoryPath>();
@@ -26,7 +34,10 @@ internal abstract class BaseVerb : ICommand
 	/// <summary>
 	/// Runs the verb.
 	/// </summary>
-	/// <returns>The process exit code: 0 on success, 1 when the run failed or the user aborted.</returns>
+	/// <returns>
+	/// The process exit code: 0 on success, 1 when the run failed or the user aborted, and 2 when the
+	/// command line had <see cref="UnexpectedArguments"/>.
+	/// </returns>
 	public abstract int Run();
 
 	/// <summary>
@@ -59,6 +70,13 @@ internal abstract class BaseVerb<T> : BaseVerb where T : BaseVerb<T>
 		try
 		{
 			ExitCode = 0;
+			if (UnexpectedArguments.Any())
+			{
+				string commands = string.Join(", ", Program.Verbs.Where(verb => verb != typeof(Menu)).Select(verb => verb.Name));
+				Console.WriteLine($"Unexpected argument: {string.Join(' ', UnexpectedArguments)}. Commands: {commands}. Give the path with -p.");
+				return 2;
+			}
+
 			if (!ValidateArgs() || (ScansADirectory && (!IsRepresentablePath() || !FileScanner.IsScannableDirectory(Path))))
 			{
 				return 1;

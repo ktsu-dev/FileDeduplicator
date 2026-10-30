@@ -49,6 +49,9 @@ FileDeduplicator Deduplicate -p "C:\path\to\directory"
 FileDeduplicator Stats -p "C:\path\to\directory"
 ```
 
+Command names match in any case, so `scan` runs `Scan`. An unknown command, or any argument other
+than an option such as a path given without `-p`, is an error and exits 2 rather than being ignored.
+
 ### Options
 
 | Option | Description |

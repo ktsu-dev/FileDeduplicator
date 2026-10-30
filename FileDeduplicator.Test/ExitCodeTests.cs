@@ -33,7 +33,7 @@ public sealed class ExitCodeTests
 		_ = ConsoleCapture.Run(
 			captured =>
 			{
-				using Parser parser = new(settings => settings.HelpWriter = captured);
+				using Parser parser = Program.CreateParser(captured);
 				return Program.Run(parser, args);
 			},
 			string.Empty,
@@ -121,6 +121,48 @@ public sealed class ExitCodeTests
 	[TestMethod]
 	public void AnUnknownOptionExitsTwo() =>
 		Assert.AreEqual(2, ExitCodeOfCommandLine("Scan", "--nope"));
+
+	[TestMethod]
+	public void ALowercaseVerbRunsThatVerb()
+	{
+		using TempTree tree = new();
+		string missing = Path.Combine(tree.Root.WeakString, "not-there");
+
+		// Scan of a missing directory exits 1; the Menu it used to fall through to exits 0 at end of input
+		Assert.AreEqual(1, ExitCodeOfCommandLine("scan", "-p", missing));
+		Assert.AreEqual(0, ExitCodeOfCommandLine("scan", "-p", tree.Root.WeakString));
+	}
+
+	[TestMethod]
+	public void AnUnknownVerbExitsTwo()
+	{
+		using TempTree tree = new();
+		Assert.AreEqual(2, ExitCodeOfCommandLine("dedupe", "-p", tree.Root.WeakString));
+	}
+
+	[TestMethod]
+	public void AStrayPositionalArgumentExitsTwo()
+	{
+		using TempTree tree = new();
+		Assert.AreEqual(2, ExitCodeOfCommandLine("Scan", "-p", tree.Root.WeakString, "extra"));
+	}
+
+	[TestMethod]
+	public void APathGivenWithoutDashPExitsTwoWithoutPrompting()
+	{
+		using TempTree tree = new();
+		string output = ConsoleCapture.Run(
+			captured =>
+			{
+				using Parser parser = Program.CreateParser(captured);
+				return Program.Run(parser, ["Deduplicate", tree.Root.WeakString]);
+			},
+			"y",
+			out int exitCode);
+
+		Assert.AreEqual(2, exitCode);
+		Assert.IsFalse(output.Contains("Enter the path", StringComparison.Ordinal), output);
+	}
 
 	[TestMethod]
 	public void AskingForHelpExitsZero() =>
