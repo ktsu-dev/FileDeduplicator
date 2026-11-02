@@ -9,23 +9,7 @@ using CommandLine;
 [Verb("Deduplicate", HelpText = "Scan a directory and remove duplicate files, keeping the copy with the shortest name.")]
 internal sealed class Deduplicate : BaseVerb<Deduplicate>
 {
-	internal override bool ValidateArgs()
-	{
-		if (string.IsNullOrWhiteSpace(PathString))
-		{
-			Console.Write("Enter the path to deduplicate: ");
-			string? input = Console.ReadLine()?.Trim();
-			if (string.IsNullOrEmpty(input))
-			{
-				Console.WriteLine("No path provided. Aborting.");
-				return false;
-			}
-
-			PathString = input;
-		}
-
-		return base.ValidateArgs();
-	}
+	internal override bool ValidateArgs() => PromptForPathIfMissing("deduplicate") && base.ValidateArgs();
 
 	internal override void Run(Deduplicate options)
 	{
