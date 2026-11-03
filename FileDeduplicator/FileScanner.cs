@@ -82,9 +82,9 @@ internal static class FileScanner
 	/// <param name="directory">The full path of the directory.</param>
 	/// <returns><see langword="true"/> when the directory holds git metadata.</returns>
 	internal static bool IsGitDirectory(string directory) =>
-		File.Exists(Path.Combine(directory, "HEAD"))
-		&& Directory.Exists(Path.Combine(directory, "objects"))
-		&& Directory.Exists(Path.Combine(directory, "refs"));
+		File.Exists(Path.Join(directory, "HEAD"))
+		&& Directory.Exists(Path.Join(directory, "objects"))
+		&& Directory.Exists(Path.Join(directory, "refs"));
 
 	/// <summary>
 	/// Checks that <paramref name="path"/> is a directory that can be scanned, and says why in one
