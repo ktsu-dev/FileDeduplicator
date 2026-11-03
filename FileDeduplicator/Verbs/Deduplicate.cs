@@ -85,7 +85,7 @@ internal sealed class Deduplicate : BaseVerb<Deduplicate>
 
 		// Step 6: Delete duplicates
 		Console.WriteLine("Deleting duplicates...");
-		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, options.Path);
 		Console.WriteLine();
 
 		Console.WriteLine($"Deleted {result.DeletedCount} file(s).");

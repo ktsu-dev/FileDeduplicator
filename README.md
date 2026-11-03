@@ -70,6 +70,8 @@ Version-control metadata is never scanned. The `.git`, `.svn`, `.hg` and `.bzr` 
 
 One file reached at two paths is not a duplicate of itself. A hardlink, a bind mount, or a share mounted twice gives one file several paths, and deleting one of them either deletes the copy being kept or frees nothing. Such paths are counted as one file, and deletion never removes a path that leads to the kept file.
 
+Deletion never leaves the scanned folder. Each path is resolved, following every link along it, immediately before it is deleted. If a directory under the root has been replaced by a link to somewhere else since the scan, for example while the confirmation prompt was open, the file is kept and reported as skipped.
+
 For example, given these duplicates:
 - `C:\photos\vacation\IMG_20240101_123456.jpg`
 - `C:\photos\beach.jpg`
