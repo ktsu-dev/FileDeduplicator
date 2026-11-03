@@ -70,6 +70,8 @@ Version-control metadata is never scanned. The `.git`, `.svn`, `.hg` and `.bzr` 
 
 One file reached at two paths is not a duplicate of itself. A hardlink, a bind mount, or a share mounted twice gives one file several paths, and deleting one of them either deletes the copy being kept or frees nothing. Such paths are counted as one file, and deletion never removes a path that leads to the kept file.
 
+The copy being kept is checked again before each deletion. If a sync client or an editor rewrites it while the other copies are being deleted, the rest of the group is kept and reported as skipped, because each of them may now be the last copy of the content. After a group's last deletion the kept copy is re-hashed, and a change the quick check could not see is reported as an error.
+
 For example, given these duplicates:
 - `C:\photos\vacation\IMG_20240101_123456.jpg`
 - `C:\photos\beach.jpg`
