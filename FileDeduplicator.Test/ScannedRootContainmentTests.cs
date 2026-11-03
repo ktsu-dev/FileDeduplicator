@@ -99,6 +99,72 @@ public sealed class ScannedRootContainmentTests
 		Assert.IsFalse(RealPath.IsWithin(realRoot + "-sibling", realRoot), "A sibling sharing the root's name as a prefix is not inside it.");
 	}
 
+	/// <summary>
+	/// A link loop never resolves, so a scanned root reached through one leaves every copy on disk
+	/// with a reason, rather than deleting on an unchecked path.
+	/// </summary>
+	[TestMethod]
+	public void AnUnresolvableRootSkipsEveryCopy()
+	{
+		// Arrange -- loop-a -> loop-b -> loop-a
+		using TempTree tree = new();
+		AbsoluteFilePath keeper = tree.Write("a.txt", "shared");
+		AbsoluteFilePath copy = tree.Write("bb.txt", "shared");
+		IReadOnlyList<DuplicateGroup> duplicates = Deduplicator.FindDuplicates(Deduplicator.GroupByHash(FileHasher.HashFiles([keeper, copy])));
+		string loopA = Path.Combine(tree.Root.WeakString, "loop-a");
+		string loopB = Path.Combine(tree.Root.WeakString, "loop-b");
+		CreateDirectoryLinkOrSkip(loopA, loopB);
+		CreateDirectoryLinkOrSkip(loopB, loopA);
+
+		// Act
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, loopA.As<AbsoluteDirectoryPath>());
+
+		// Assert
+		Assert.AreEqual(0, result.DeletedCount);
+		Assert.IsTrue(TempTree.Exists(copy), "A copy must not be deleted when the root cannot be resolved.");
+		Assert.ContainsSingle(result.SkippedFiles);
+		Assert.Contains("could not be resolved", result.SkippedFiles[0].Reason);
+	}
+
+	/// <summary>
+	/// Resolution refuses a relative path, gives up on a link loop, and handles "." and ".."
+	/// segments without leaving the real directory tree.
+	/// </summary>
+	[TestMethod]
+	public void RealPathHandlesDotSegmentsLoopsAndRelativeInput()
+	{
+		// Arrange
+		using TempTree tree = new();
+		_ = tree.Write("dir/file.txt", "x");
+		Assert.IsTrue(RealPath.TryResolve(tree.Root.WeakString, out string realRoot));
+		string loopA = Path.Combine(tree.Root.WeakString, "loop-a");
+		string loopB = Path.Combine(tree.Root.WeakString, "loop-b");
+		CreateDirectoryLinkOrSkip(loopA, loopB);
+		CreateDirectoryLinkOrSkip(loopB, loopA);
+		string dotted = tree.Root.WeakString + $"{Path.DirectorySeparatorChar}.{Path.DirectorySeparatorChar}dir{Path.DirectorySeparatorChar}..{Path.DirectorySeparatorChar}dir{Path.DirectorySeparatorChar}file.txt";
+
+		// Act + Assert
+		Assert.IsFalse(RealPath.TryResolve(Path.Combine("relative", "path"), out _), "A relative path has no single meaning to resolve.");
+		Assert.IsFalse(RealPath.TryResolve(Path.Combine(loopA, "file.txt"), out _), "A link loop never resolves.");
+		Assert.IsTrue(RealPath.TryResolve(dotted, out string real));
+		Assert.AreEqual(Path.Combine(realRoot, "dir", "file.txt"), real);
+	}
+
+	/// <summary>
+	/// A file-system root contains everything on it, including paths that do not repeat its
+	/// trailing separator.
+	/// </summary>
+	[TestMethod]
+	public void EverythingIsWithinAFileSystemRoot()
+	{
+		// Arrange
+		string root = Path.GetPathRoot(Path.GetTempPath())!;
+
+		// Act + Assert
+		Assert.IsTrue(RealPath.IsWithin(Path.Combine(root, "any", "where"), root));
+		Assert.IsTrue(RealPath.IsWithin(root, root));
+	}
+
 	private static void CreateDirectoryLinkOrSkip(string path, string target)
 	{
 		try
