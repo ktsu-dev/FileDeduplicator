@@ -385,17 +385,14 @@ internal sealed class KeeperSnapshot
 			identity = FileIdentity.TryGet(keeper.WeakString, out FileIdentity id) ? id : null;
 			return true;
 		}
-		catch (IOException)
+		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
 		{
+			// A keeper that is gone or can no longer be read does not match the snapshot.
+			length = 0;
+			lastWriteTimeUtc = default;
+			identity = null;
+			return false;
 		}
-		catch (UnauthorizedAccessException)
-		{
-		}
-
-		length = 0;
-		lastWriteTimeUtc = default;
-		identity = null;
-		return false;
 	}
 }
 
