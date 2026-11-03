@@ -86,7 +86,8 @@ internal static class RealPath
 				continue;
 			}
 
-			string next = Path.Combine(current, part);
+			// part comes from splitting on separators, so it is never rooted; Join cannot re-root either way.
+			string next = Path.Join(current, part);
 			string? target;
 
 			try
@@ -113,8 +114,15 @@ internal static class RealPath
 				return null;
 			}
 
+			// A target rooted without being fully qualified (a Windows "\dir" or "C:dir") depends on a
+			// current drive or directory this process does not share with the link, so it is refused.
+			if (!Path.IsPathFullyQualified(target) && Path.IsPathRooted(target))
+			{
+				return null;
+			}
+
 			// A relative target is relative to the directory holding the link, which is current.
-			string? resolvedTarget = Resolve(Path.IsPathFullyQualified(target) ? target : Path.Combine(current, target), ref linksFollowed);
+			string? resolvedTarget = Resolve(Path.IsPathFullyQualified(target) ? target : Path.Join(current, target), ref linksFollowed);
 			if (resolvedTarget is null)
 			{
 				return null;
