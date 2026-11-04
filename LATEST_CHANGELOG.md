@@ -1,8 +1,6 @@
-## v1.3.21 (patch)
+## v1.3.22 (patch)
 
-Changes since v1.3.20:
+Changes since v1.3.21:
 
-- Skip bare git repositories, CVS and _darcs when scanning [patch] (#205) (matt-edmondson)
-- Stop deleting a group's copies once the kept copy changes mid-run [patch] (#203) (matt-edmondson)
-- Strip the quotes from a path pasted at the prompt [patch] (#199) (matt-edmondson)
+- Refuse to delete through a path that no longer leads inside the scanned folder [patch] (#204) (matt-edmondson)
 
