@@ -12,23 +12,7 @@ using ktsu.Semantics.Paths;
 [Verb("Stats", HelpText = "Show statistics about files and duplicates in a directory.")]
 internal sealed class Stats : BaseVerb<Stats>
 {
-	internal override bool ValidateArgs()
-	{
-		if (string.IsNullOrWhiteSpace(PathString))
-		{
-			Console.Write("Enter the path to analyze: ");
-			string? input = Console.ReadLine()?.Trim();
-			if (string.IsNullOrEmpty(input))
-			{
-				Console.WriteLine("No path provided. Aborting.");
-				return false;
-			}
-
-			PathString = input;
-		}
-
-		return base.ValidateArgs();
-	}
+	internal override bool ValidateArgs() => PromptForPathIfMissing("analyze") && base.ValidateArgs();
 
 	internal override void Run(Stats options)
 	{

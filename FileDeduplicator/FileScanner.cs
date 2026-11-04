@@ -52,6 +52,12 @@ internal static class FileScanner
 	/// reclaim a few hundred bytes (ktsu-dev/FileDeduplicator#192). Matched on the directory's own
 	/// name, ignoring case, so a file whose path merely contains ".git" is still scanned, and so is a
 	/// <c>.git</c> <em>file</em> (the pointer a worktree or submodule leaves), which is not a directory.
+	/// <para>
+	/// <c>CVS</c> is here because every directory of a CVS checkout holds a <c>CVS</c> folder whose
+	/// <c>Root</c> and <c>Repository</c> files are identical across the whole checkout. A bare git
+	/// repository can have any name, so it is recognised by its structure instead, in
+	/// <see cref="IsGitDirectory"/>.
+	/// </para>
 	/// </remarks>
 	private static readonly HashSet<string> VersionControlDirectories = new(StringComparer.OrdinalIgnoreCase)
 	{
@@ -59,7 +65,26 @@ internal static class FileScanner
 		".svn",
 		".hg",
 		".bzr",
+		"CVS",
+		"_darcs",
 	};
+
+	/// <summary>
+	/// Whether <paramref name="directory"/> is a git directory by structure: a <c>HEAD</c> file next
+	/// to <c>objects</c> and <c>refs</c> directories, the same test git uses to recognise a gitdir.
+	/// </summary>
+	/// <remarks>
+	/// A bare repository (<c>project.git</c> on a server, a <c>git clone --mirror</c>, the bare-dotfiles
+	/// <c>~/.cfg</c>) keeps its refs directly in a directory of any name, so the name list above misses
+	/// it, and two branches at the same commit are byte-identical files (ktsu-dev/FileDeduplicator#198).
+	/// A folder that only ends in ".git" without that structure is still scanned.
+	/// </remarks>
+	/// <param name="directory">The full path of the directory.</param>
+	/// <returns><see langword="true"/> when the directory holds git metadata.</returns>
+	internal static bool IsGitDirectory(string directory) =>
+		File.Exists(Path.Join(directory, "HEAD"))
+		&& Directory.Exists(Path.Join(directory, "objects"))
+		&& Directory.Exists(Path.Join(directory, "refs"));
 
 	/// <summary>
 	/// Checks that <paramref name="path"/> is a directory that can be scanned, and says why in one
@@ -100,7 +125,8 @@ internal static class FileScanner
 			WalkOptions)
 		{
 			ShouldIncludePredicate = (ref entry) => !entry.IsDirectory,
-			ShouldRecursePredicate = (ref entry) => !VersionControlDirectories.Contains(entry.FileName.ToString()),
+			ShouldRecursePredicate = (ref entry) =>
+				!VersionControlDirectories.Contains(entry.FileName.ToString()) && !IsGitDirectory(entry.ToFullPath()),
 		};
 
 		List<AbsoluteFilePath> files = [];

@@ -66,9 +66,11 @@ When duplicates are found, the file with the **shortest filename** is kept. If t
 
 Empty files are reported as a group but never deleted. Deleting one frees nothing, and an empty file such as `__init__.py`, `.gitkeep` or `py.typed` usually matters because it exists.
 
-Version-control metadata is never scanned. The `.git`, `.svn`, `.hg` and `.bzr` directories under the root are skipped, because their small files are routinely identical by design: every branch ref pointing at the same commit has the same content, and deleting one deletes the branch.
+Version-control metadata is never scanned. The `.git`, `.svn`, `.hg`, `.bzr`, `CVS` and `_darcs` directories under the root are skipped, and so is a bare git repository of any name (`project.git`, a `git clone --mirror`, `~/.cfg`), recognised by a `HEAD` file next to `objects` and `refs` directories. They are skipped because their small files are routinely identical by design: every branch ref pointing at the same commit has the same content, and deleting one deletes the branch.
 
 One file reached at two paths is not a duplicate of itself. A hardlink, a bind mount, or a share mounted twice gives one file several paths, and deleting one of them either deletes the copy being kept or frees nothing. Such paths are counted as one file, and deletion never removes a path that leads to the kept file.
+
+The copy being kept is checked again before each deletion. If a sync client or an editor rewrites it while the other copies are being deleted, the rest of the group is kept and reported as skipped, because each of them may now be the last copy of the content. After a group's last deletion the kept copy is re-hashed, and a change the quick check could not see is reported as an error.
 
 Deletion never leaves the scanned folder. Each path is resolved, following every link along it, immediately before it is deleted. If a directory under the root has been replaced by a link to somewhere else since the scan, for example while the confirmation prompt was open, the file is kept and reported as skipped.
 

@@ -25,6 +25,8 @@ public sealed class VersionControlMetadataTests
 	[DataRow(".svn")]
 	[DataRow(".hg")]
 	[DataRow(".bzr")]
+	[DataRow("CVS")]
+	[DataRow("_darcs")]
 	[DataRow(".GIT")]
 	public void TheScanSkipsVersionControlMetadataDirectories(string metadata)
 	{
@@ -59,6 +61,65 @@ public sealed class VersionControlMetadataTests
 
 		// Assert
 		CollectionAssert.AreEquivalent(expected, files.ToArray());
+	}
+
+	[TestMethod]
+	[DataRow("srv/project.git")]
+	[DataRow("mirror")]
+	[DataRow(".cfg")]
+	public void TheScanSkipsABareGitRepositoryWhateverItsName(string bare)
+	{
+		// Arrange -- a bare repository keeps HEAD, objects/ and refs/ directly in a folder of any name
+		using TempTree tree = new();
+		AbsoluteFilePath outside = tree.Write("readme.txt", "content");
+		_ = tree.Write($"{bare}/HEAD", "ref: refs/heads/main\n");
+		_ = tree.Write($"{bare}/objects/info/packs", "\n");
+		_ = tree.Write($"{bare}/refs/heads/main", BranchTip);
+		_ = tree.Write($"{bare}/refs/heads/dev", BranchTip);
+
+		// Act
+		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(tree.Root);
+
+		// Assert
+		CollectionAssert.AreEquivalent(new[] { outside }, files.ToArray());
+	}
+
+	[TestMethod]
+	public void TheScanStillReadsAFolderThatHasOnlyPartOfAGitDirectoryLayout()
+	{
+		// Arrange -- HEAD and refs/ without objects/ is not a gitdir, whatever the folder is called
+		using TempTree tree = new();
+		AbsoluteFilePath[] expected =
+		[
+			tree.Write("notes.git/HEAD", "ref: refs/heads/main\n"),
+			tree.Write("notes.git/refs/heads/a", BranchTip),
+			tree.Write("notes.git/refs/heads/b", BranchTip),
+		];
+
+		// Act
+		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(tree.Root);
+
+		// Assert
+		CollectionAssert.AreEquivalent(expected, files.ToArray());
+	}
+
+	[TestMethod]
+	public void DeduplicateLeavesTheBranchesOfABareRepositoryAlone()
+	{
+		// Arrange -- the reproduction from ktsu-dev/FileDeduplicator#198
+		using TempTree tree = new();
+		_ = tree.Write("srv/project.git/HEAD", "ref: refs/heads/main\n");
+		_ = tree.Write("srv/project.git/objects/info/packs", "\n");
+		AbsoluteFilePath main = tree.Write("srv/project.git/refs/heads/main", BranchTip);
+		AbsoluteFilePath dev = tree.Write("srv/project.git/refs/heads/dev", BranchTip);
+
+		// Act
+		string output = ConsoleCapture.Normalize(ConsoleCapture.Run(new Deduplicate { PathString = tree.Root.WeakString }, "y"));
+
+		// Assert
+		Assert.IsTrue(TempTree.Exists(main), $"refs/heads/main was deleted. Output was:\n{output}");
+		Assert.IsTrue(TempTree.Exists(dev), $"refs/heads/dev was deleted. Output was:\n{output}");
+		Assert.DoesNotContain("project.git", output, $"The run reported a path inside the bare repository. Output was:\n{output}");
 	}
 
 	[TestMethod]

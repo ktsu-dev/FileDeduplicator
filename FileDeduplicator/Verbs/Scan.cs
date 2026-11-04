@@ -11,23 +11,7 @@ using ktsu.Semantics.Paths;
 [Verb("Scan", HelpText = "Scan a directory for duplicate files and display results.")]
 internal sealed class Scan : BaseVerb<Scan>
 {
-	internal override bool ValidateArgs()
-	{
-		if (string.IsNullOrWhiteSpace(PathString))
-		{
-			Console.Write("Enter the path to scan: ");
-			string? input = Console.ReadLine()?.Trim();
-			if (string.IsNullOrEmpty(input))
-			{
-				Console.WriteLine("No path provided. Aborting.");
-				return false;
-			}
-
-			PathString = input;
-		}
-
-		return base.ValidateArgs();
-	}
+	internal override bool ValidateArgs() => PromptForPathIfMissing("scan") && base.ValidateArgs();
 
 	internal override void Run(Scan options)
 	{
