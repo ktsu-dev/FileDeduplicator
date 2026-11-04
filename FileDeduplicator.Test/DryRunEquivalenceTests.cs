@@ -71,7 +71,7 @@ public sealed class DryRunEquivalenceTests
 		HashSet<AbsoluteFilePath> predicted = PredictedDeletions(duplicates);
 
 		// Act
-		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, tree.Root);
 		HashSet<AbsoluteFilePath> actuallyDeleted = [.. all.Where(f => !TempTree.Exists(f))];
 
 		// Assert
@@ -104,7 +104,7 @@ public sealed class DryRunEquivalenceTests
 		IReadOnlyList<DuplicateGroup> duplicates = Deduplicator.FindDuplicates(Deduplicator.GroupByHash(hashes));
 
 		// Act
-		_ = Deduplicator.DeleteDuplicates(duplicates);
+		_ = Deduplicator.DeleteDuplicates(duplicates, tree.Root);
 
 		// Assert
 		foreach (DuplicateGroup group in duplicates)
@@ -131,13 +131,13 @@ public sealed class DryRunEquivalenceTests
 		IReadOnlyList<AbsoluteFilePath> firstScan = FileScanner.ScanForFiles(tree.Root);
 		IReadOnlyList<DuplicateGroup> firstDuplicates =
 			Deduplicator.FindDuplicates(Deduplicator.GroupByHash(FileHasher.HashFiles(firstScan)));
-		DeduplicationResult first = Deduplicator.DeleteDuplicates(firstDuplicates);
+		DeduplicationResult first = Deduplicator.DeleteDuplicates(firstDuplicates, tree.Root);
 
 		// Act -- second pass over the now-deduplicated tree
 		IReadOnlyList<AbsoluteFilePath> secondScan = FileScanner.ScanForFiles(tree.Root);
 		IReadOnlyList<DuplicateGroup> secondDuplicates =
 			Deduplicator.FindDuplicates(Deduplicator.GroupByHash(FileHasher.HashFiles(secondScan)));
-		DeduplicationResult second = Deduplicator.DeleteDuplicates(secondDuplicates);
+		DeduplicationResult second = Deduplicator.DeleteDuplicates(secondDuplicates, tree.Root);
 
 		// Assert
 		Assert.AreEqual(1, first.DeletedCount);

@@ -72,6 +72,8 @@ One file reached at two paths is not a duplicate of itself. A hardlink, a bind m
 
 The copy being kept is checked again before each deletion. If a sync client or an editor rewrites it while the other copies are being deleted, the rest of the group is kept and reported as skipped, because each of them may now be the last copy of the content. After a group's last deletion the kept copy is re-hashed, and a change the quick check could not see is reported as an error.
 
+Deletion never leaves the scanned folder. Each path is resolved, following every link along it, immediately before it is deleted. If a directory under the root has been replaced by a link to somewhere else since the scan, for example while the confirmation prompt was open, the file is kept and reported as skipped.
+
 For example, given these duplicates:
 - `C:\photos\vacation\IMG_20240101_123456.jpg`
 - `C:\photos\beach.jpg`

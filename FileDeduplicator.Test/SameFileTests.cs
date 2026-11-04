@@ -181,7 +181,7 @@ public sealed class SameFileTests
 		DuplicateGroup group = new(hash, [keeper, link], "content".Length);
 
 		// Act
-		DeduplicationResult result = Deduplicator.DeleteDuplicates([group]);
+		DeduplicationResult result = Deduplicator.DeleteDuplicates([group], tree.Root);
 
 		// Assert
 		Assert.AreEqual(0, result.DeletedCount);

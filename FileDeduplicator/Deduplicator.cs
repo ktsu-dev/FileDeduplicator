@@ -139,17 +139,23 @@ internal static class Deduplicator
 	/// Deletes every copy in each deletable group except the one <see cref="SelectFileToKeep"/> keeps.
 	/// </summary>
 	/// <param name="duplicateGroups">The groups to deduplicate.</param>
+	/// <param name="root">
+	/// The directory that was scanned. A copy whose path no longer leads inside it is not deleted.
+	/// </param>
 	/// <param name="afterDelete">
 	/// Called after each copy is deleted. Production code passes nothing; tests use it to change the
 	/// filesystem between two deletions in one group.
 	/// </param>
 	/// <returns>What was deleted, skipped and failed.</returns>
-	internal static DeduplicationResult DeleteDuplicates(IReadOnlyList<DuplicateGroup> duplicateGroups, Action<AbsoluteFilePath>? afterDelete = null)
+	internal static DeduplicationResult DeleteDuplicates(IReadOnlyList<DuplicateGroup> duplicateGroups, AbsoluteDirectoryPath root, Action<AbsoluteFilePath>? afterDelete = null)
 	{
 		int deletedCount = 0;
 		long bytesReclaimed = 0;
 		List<string> errors = [];
 		List<SkippedFile> skipped = [];
+
+		// Resolved now, not at scan time: the paths it is compared with are resolved now too.
+		string? realRoot = RealPath.TryResolve(root.WeakString, out string resolvedRoot) ? resolvedRoot : null;
 
 		foreach (DuplicateGroup group in duplicateGroups.Where(IsDeletable))
 		{
@@ -208,6 +214,17 @@ internal static class Deduplicator
 					continue;
 				}
 
+				// The path was recorded at scan time, when no directory along it under the root was a
+				// link (the scan does not follow them). A directory replaced by a link since then --
+				// during the confirmation prompt, which can stay open indefinitely -- would send the
+				// delete to an identical file outside the tree the user approved. Checked last,
+				// immediately before the delete, to keep that window as short as it can be.
+				if (!LeadsInsideRoot(file, realRoot, out string? outsideReason))
+				{
+					Skip(file, outsideReason, skipped);
+					continue;
+				}
+
 				if (TryDelete(file, errors, out long fileSize))
 				{
 					deletedCount++;
@@ -229,6 +246,33 @@ internal static class Deduplicator
 		}
 
 		return new DeduplicationResult(deletedCount, bytesReclaimed, errors, skipped);
+	}
+
+	/// <summary>
+	/// Reports whether a recorded path still leads to a file inside the scanned root.
+	/// </summary>
+	/// <param name="file">The path recorded at scan time.</param>
+	/// <param name="realRoot">The scanned root with every link resolved, or <see langword="null"/> if it could not be.</param>
+	/// <param name="reason">When the answer is no, why -- phrased to follow the file's name.</param>
+	/// <returns><see langword="true"/> if the file's directory resolves to the root or beneath it.</returns>
+	private static bool LeadsInsideRoot(AbsoluteFilePath file, string? realRoot, out string? reason)
+	{
+		string directory = Path.GetDirectoryName(file.WeakString)!;
+
+		if (realRoot is null || !RealPath.TryResolve(directory, out string realDirectory))
+		{
+			reason = "could not be resolved to confirm it is still inside the scanned folder";
+			return false;
+		}
+
+		if (!RealPath.IsWithin(realDirectory, realRoot))
+		{
+			reason = $"no longer leads inside the scanned folder: its directory now resolves to {realDirectory}";
+			return false;
+		}
+
+		reason = null;
+		return true;
 	}
 
 	/// <summary>

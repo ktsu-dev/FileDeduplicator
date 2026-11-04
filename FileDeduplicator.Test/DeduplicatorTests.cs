@@ -193,7 +193,7 @@ public sealed class DeduplicatorTests
 		AbsoluteFilePath keeper = Deduplicator.SelectFileToKeep(duplicates[0].Files);
 
 		// Act
-		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, tree.Root);
 
 		// Assert
 		Assert.AreEqual(2, result.DeletedCount);
@@ -223,7 +223,7 @@ public sealed class DeduplicatorTests
 		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(FileHasher.HashFiles([initA, initB, copy, keeper]));
 
 		// Act
-		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, tree.Root);
 
 		// Assert
 		Assert.HasCount(2, duplicates, "The empty files are still reported as a group.");
@@ -253,7 +253,7 @@ public sealed class DeduplicatorTests
 		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(hashes);
 
 		// Act
-		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, tree.Root);
 
 		// Assert -- three copies, two deleted, 100 bytes apiece
 		Assert.AreEqual(2, result.DeletedCount);
@@ -280,7 +280,7 @@ public sealed class DeduplicatorTests
 		_ = tree.Write("bb.txt", "no longer the same content");
 
 		// Act
-		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, tree.Root);
 
 		// Assert
 		Assert.IsTrue(TempTree.Exists(changed), "A file that is no longer a duplicate must not be deleted.");
@@ -311,7 +311,7 @@ public sealed class DeduplicatorTests
 		_ = tree.Write("a.txt", "the keeper was overwritten");
 
 		// Act
-		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, tree.Root);
 
 		// Assert
 		Assert.AreEqual(0, result.DeletedCount);
@@ -340,6 +340,7 @@ public sealed class DeduplicatorTests
 		// Act -- the keeper is rewritten right after the first deletion, as a sync client would
 		DeduplicationResult result = Deduplicator.DeleteDuplicates(
 			duplicates,
+			tree.Root,
 			deleted =>
 			{
 				if (deleted == first)
@@ -375,6 +376,7 @@ public sealed class DeduplicatorTests
 		// Act -- same length, timestamp put back
 		DeduplicationResult result = Deduplicator.DeleteDuplicates(
 			duplicates,
+			tree.Root,
 			_ =>
 			{
 				File.WriteAllText(keeper.WeakString, "SHARED");
@@ -404,7 +406,7 @@ public sealed class DeduplicatorTests
 		File.Delete(vanishing.WeakString);
 
 		// Act
-		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, tree.Root);
 
 		// Assert
 		Assert.AreEqual(0, result.DeletedCount);
@@ -434,7 +436,7 @@ public sealed class DeduplicatorTests
 		_ = Directory.CreateDirectory(replaced.WeakString);
 
 		// Act
-		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, tree.Root);
 
 		// Assert
 		Assert.AreEqual(0, result.DeletedCount);
@@ -462,7 +464,7 @@ public sealed class DeduplicatorTests
 		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(hashes);
 
 		// Act
-		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, tree.Root);
 
 		// Assert
 		Assert.AreEqual(2, result.DeletedCount);
@@ -496,7 +498,7 @@ public sealed class DeduplicatorTests
 		}
 
 		// Act
-		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates);
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, tree.Root);
 
 		// Assert -- the refusal is reported, not thrown
 		Assert.ContainsSingle(result.Errors);
@@ -517,8 +519,11 @@ public sealed class DeduplicatorTests
 	[TestMethod]
 	public void DeletingAnEmptyGroupListIsANoOp()
 	{
+		// Arrange
+		using TempTree tree = new();
+
 		// Act
-		DeduplicationResult result = Deduplicator.DeleteDuplicates([]);
+		DeduplicationResult result = Deduplicator.DeleteDuplicates([], tree.Root);
 
 		// Assert
 		Assert.AreEqual(0, result.DeletedCount);
