@@ -54,6 +54,46 @@ internal abstract class BaseVerb : ICommand
 
 	internal virtual bool ValidateArgs() => true;
 
+	/// <summary>
+	/// Asks for the path when none was given with <c>-p</c>.
+	/// </summary>
+	/// <remarks>
+	/// A pasted path usually arrives in quotes: Explorer's Copy as path always adds them, and dragging a
+	/// folder with a space into a terminal does too. Left in, they make <see cref="Path"/> resolve the
+	/// quoted text as a relative name under the current directory, so one matching pair is removed.
+	/// </remarks>
+	/// <param name="action">What the verb does with the path, as in "Enter the path to scan".</param>
+	/// <returns><see langword="false"/> when the user gave no path and the verb should abort.</returns>
+	internal bool PromptForPathIfMissing(string action)
+	{
+		if (!string.IsNullOrWhiteSpace(PathString))
+		{
+			return true;
+		}
+
+		Console.Write($"Enter the path to {action}: ");
+		string input = Unquote(Console.ReadLine()?.Trim() ?? string.Empty);
+		if (string.IsNullOrWhiteSpace(input))
+		{
+			Console.WriteLine("No path provided. Aborting.");
+			return false;
+		}
+
+		PathString = input;
+		return true;
+	}
+
+	/// <summary>
+	/// Removes one matching pair of <c>"</c> or <c>'</c> surrounding <paramref name="input"/>, and the
+	/// white space just inside them.
+	/// </summary>
+	/// <param name="input">The trimmed answer to the path prompt.</param>
+	/// <returns>The answer without its quotes, or unchanged when it is not quoted.</returns>
+	internal static string Unquote(string input) =>
+		input.Length >= 2 && (input[0] == '"' || input[0] == '\'') && input[^1] == input[0]
+			? input[1..^1].Trim()
+			: input;
+
 	public void Execute() => _ = Run();
 }
 
