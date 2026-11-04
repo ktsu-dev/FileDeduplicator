@@ -1,7 +1,8 @@
-## v1.3.20 (patch)
+## v1.3.21 (patch)
 
-Changes since v1.3.19:
+Changes since v1.3.20:
 
-- Run a lowercase verb and reject stray arguments instead of ignoring them [patch] (Claude)
-- Skip .git, .svn, .hg and .bzr directories when scanning [patch] (Claude)
+- Skip bare git repositories, CVS and _darcs when scanning [patch] (#205) (matt-edmondson)
+- Stop deleting a group's copies once the kept copy changes mid-run [patch] (#203) (matt-edmondson)
+- Strip the quotes from a path pasted at the prompt [patch] (#199) (matt-edmondson)
 
