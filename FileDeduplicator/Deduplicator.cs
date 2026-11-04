@@ -135,7 +135,16 @@ internal static class Deduplicator
 	/// <returns><see langword="true"/> unless the group's files are empty.</returns>
 	internal static bool IsDeletable(DuplicateGroup group) => group.FileSize > 0;
 
-	internal static DeduplicationResult DeleteDuplicates(IReadOnlyList<DuplicateGroup> duplicateGroups)
+	/// <summary>
+	/// Deletes every copy in each deletable group except the one <see cref="SelectFileToKeep"/> keeps.
+	/// </summary>
+	/// <param name="duplicateGroups">The groups to deduplicate.</param>
+	/// <param name="afterDelete">
+	/// Called after each copy is deleted. Production code passes nothing; tests use it to change the
+	/// filesystem between two deletions in one group.
+	/// </param>
+	/// <returns>What was deleted, skipped and failed.</returns>
+	internal static DeduplicationResult DeleteDuplicates(IReadOnlyList<DuplicateGroup> duplicateGroups, Action<AbsoluteFilePath>? afterDelete = null)
 	{
 		int deletedCount = 0;
 		long bytesReclaimed = 0;
@@ -158,8 +167,28 @@ internal static class Deduplicator
 
 			bool keeperIdentified = FileIdentity.TryGet(keeper.WeakString, out FileIdentity keeperIdentity);
 
-			foreach (AbsoluteFilePath file in group.Files.Where(f => f != keeper))
+			// Deleting the other copies can take seconds apiece for large files, and the keeper can
+			// be rewritten by a sync client or an editor while that runs. Once it no longer holds the
+			// group's content, every copy still to be deleted is the last one left, so the keeper is
+			// checked cheaply before each deletion and the rest of the group is kept if it moved.
+			KeeperSnapshot? keeperSnapshot = KeeperSnapshot.TryTake(keeper);
+			bool deletedFromGroup = false;
+			List<AbsoluteFilePath> others = [.. group.Files.Where(f => f != keeper)];
+
+			for (int i = 0; i < others.Count; i++)
 			{
+				AbsoluteFilePath file = others[i];
+
+				if (keeperSnapshot is null || !keeperSnapshot.StillMatches(keeper))
+				{
+					foreach (AbsoluteFilePath remaining in others.Skip(i))
+					{
+						Skip(remaining, $"the copy being kept ({keeper}) changed while the group was being deduplicated, so this may be the last copy of the content", skipped);
+					}
+
+					break;
+				}
+
 				// Re-hash immediately before deleting: a file that changed since the scan is no
 				// longer a duplicate, and deleting it would be irreversible loss of content that
 				// exists nowhere else.
@@ -183,7 +212,19 @@ internal static class Deduplicator
 				{
 					deletedCount++;
 					bytesReclaimed += fileSize;
+					deletedFromGroup = true;
+					afterDelete?.Invoke(file);
 				}
+			}
+
+			// The snapshot cannot see a rewrite that keeps the size and lands within the timestamp's
+			// resolution, so the keeper is re-hashed once after the group's last deletion. The
+			// deletions cannot be undone by then, but the user is told the content may be gone.
+			if (deletedFromGroup && !StillMatchesGroup(keeper, group.Hash, out string? finalReason))
+			{
+				string error = $"  Error: the copy kept for this group ({keeper}) {finalReason}; the deleted copies held content it no longer has.";
+				errors.Add(error);
+				Console.WriteLine(error);
 			}
 		}
 
@@ -293,6 +334,65 @@ internal static class Deduplicator
 		SkippedFile skip = new(file, reason ?? "could not be confirmed as a duplicate");
 		skipped.Add(skip);
 		Console.WriteLine($"  Skipped: {file} -- {skip.Reason}");
+	}
+}
+
+/// <summary>
+/// The size, last write time and identity of the copy being kept, taken once its content has been
+/// confirmed, so it can be checked cheaply between deletions without re-hashing it each time.
+/// </summary>
+internal sealed class KeeperSnapshot
+{
+	private readonly long length;
+	private readonly DateTime lastWriteTimeUtc;
+	private readonly FileIdentity? identity;
+
+	private KeeperSnapshot(long length, DateTime lastWriteTimeUtc, FileIdentity? identity)
+	{
+		this.length = length;
+		this.lastWriteTimeUtc = lastWriteTimeUtc;
+		this.identity = identity;
+	}
+
+	/// <summary>
+	/// Records the keeper's current state.
+	/// </summary>
+	/// <param name="keeper">The copy being kept.</param>
+	/// <returns>The snapshot, or <see langword="null"/> if the keeper could not be read.</returns>
+	internal static KeeperSnapshot? TryTake(AbsoluteFilePath keeper) =>
+		TryRead(keeper, out long length, out DateTime lastWrite, out FileIdentity? identity)
+			? new KeeperSnapshot(length, lastWrite, identity)
+			: null;
+
+	/// <summary>
+	/// Reports whether the keeper still looks exactly as it did when the snapshot was taken.
+	/// </summary>
+	/// <param name="keeper">The copy being kept.</param>
+	/// <returns><see langword="true"/> if its size, last write time and identity are unchanged.</returns>
+	internal bool StillMatches(AbsoluteFilePath keeper) =>
+		TryRead(keeper, out long currentLength, out DateTime currentLastWrite, out FileIdentity? currentIdentity)
+		&& currentLength == length
+		&& currentLastWrite == lastWriteTimeUtc
+		&& currentIdentity == identity;
+
+	private static bool TryRead(AbsoluteFilePath keeper, out long length, out DateTime lastWriteTimeUtc, out FileIdentity? identity)
+	{
+		try
+		{
+			FileInfo info = new(keeper.WeakString);
+			length = info.Length;
+			lastWriteTimeUtc = info.LastWriteTimeUtc;
+			identity = FileIdentity.TryGet(keeper.WeakString, out FileIdentity id) ? id : null;
+			return true;
+		}
+		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+		{
+			// A keeper that is gone or can no longer be read does not match the snapshot.
+			length = 0;
+			lastWriteTimeUtc = default;
+			identity = null;
+			return false;
+		}
 	}
 }
 

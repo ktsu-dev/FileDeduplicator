@@ -322,6 +322,72 @@ public sealed class DeduplicatorTests
 	}
 
 	/// <summary>
+	/// Deleting the other copies takes time, and the keeper can be rewritten between two
+	/// deletions. Once it no longer holds the group's content, every copy still to be deleted is
+	/// the last one left, so the rest of the group must be kept and reported.
+	/// </summary>
+	[TestMethod]
+	public void AKeeperChangedDuringTheDeleteLoopPreservesTheRemainingCopies()
+	{
+		// Arrange -- a.txt is kept; bb.txt is deleted first, then ccc.txt and dddd.txt
+		using TempTree tree = new();
+		AbsoluteFilePath keeper = tree.Write("a.txt", "shared");
+		AbsoluteFilePath first = tree.Write("bb.txt", "shared");
+		AbsoluteFilePath second = tree.Write("ccc.txt", "shared");
+		AbsoluteFilePath third = tree.Write("dddd.txt", "shared");
+		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(FileHasher.HashFiles([keeper, first, second, third]));
+
+		// Act -- the keeper is rewritten right after the first deletion, as a sync client would
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(
+			duplicates,
+			deleted =>
+			{
+				if (deleted == first)
+				{
+					_ = tree.Write("a.txt", "the keeper was overwritten mid-run");
+				}
+			});
+
+		// Assert
+		Assert.IsFalse(TempTree.Exists(first), "The copy deleted before the keeper changed is gone.");
+		Assert.IsTrue(TempTree.Exists(second), "A copy after the keeper changed may be the last one left.");
+		Assert.IsTrue(TempTree.Exists(third), "A copy after the keeper changed may be the last one left.");
+		Assert.AreEqual(1, result.DeletedCount);
+		Assert.HasCount(2, result.SkippedFiles);
+		Assert.IsTrue(result.SkippedFiles.All(s => s.Reason.Contains(keeper.WeakString, StringComparison.Ordinal)), "The reason names the keeper.");
+	}
+
+	/// <summary>
+	/// A rewrite that keeps the keeper's size and last write time slips past the cheap check
+	/// between deletions, so the keeper is re-hashed after the group's last deletion and the
+	/// loss is reported rather than passed off as a clean run.
+	/// </summary>
+	[TestMethod]
+	public void AKeeperRewrittenWithoutChangingSizeOrTimeIsReportedAfterTheGroup()
+	{
+		// Arrange
+		using TempTree tree = new();
+		AbsoluteFilePath keeper = tree.Write("a.txt", "shared");
+		AbsoluteFilePath copy = tree.Write("bb.txt", "shared");
+		IReadOnlyList<DuplicateGroup> duplicates = Duplicates(FileHasher.HashFiles([keeper, copy]));
+		DateTime keeperWritten = File.GetLastWriteTimeUtc(keeper.WeakString);
+
+		// Act -- same length, timestamp put back
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(
+			duplicates,
+			_ =>
+			{
+				File.WriteAllText(keeper.WeakString, "SHARED");
+				File.SetLastWriteTimeUtc(keeper.WeakString, keeperWritten);
+			});
+
+		// Assert
+		Assert.AreEqual(1, result.DeletedCount);
+		Assert.ContainsSingle(result.Errors);
+		Assert.Contains(keeper.WeakString, result.Errors[0]);
+	}
+
+	/// <summary>
 	/// A file that disappears before the delete pass must be reported as skipped rather than
 	/// counted among the deletions, so the reclaimed total stays honest.
 	/// </summary>
