@@ -16,14 +16,23 @@ internal sealed class DuplicateScan
 		IReadOnlyList<AbsoluteFilePath> files,
 		Dictionary<AbsoluteFilePath, string> fileHashes,
 		IReadOnlyList<AbsoluteFilePath> uniqueSize,
-		Dictionary<string, List<AbsoluteFilePath>> hashGroups)
+		Dictionary<string, List<AbsoluteFilePath>> hashGroups,
+		string? realRoot)
 	{
+		RealRoot = realRoot;
 		Files = files;
 		FileHashes = fileHashes;
 		UniqueSize = uniqueSize;
 		HashGroups = hashGroups;
 		Duplicates = Deduplicator.FindDuplicates(hashGroups);
 	}
+
+	/// <summary>
+	/// Gets the root with every link resolved when the scan started, or <see langword="null"/> when it
+	/// could not be. Deletion checks every path against this, not against what the root resolves to
+	/// after the confirmation prompt.
+	/// </summary>
+	internal string? RealRoot { get; }
 
 	/// <summary>Gets every file found under the root.</summary>
 	internal IReadOnlyList<AbsoluteFilePath> Files { get; }
@@ -48,6 +57,8 @@ internal sealed class DuplicateScan
 	/// <returns>The scan, or <see langword="null"/> when the root holds no files.</returns>
 	internal static DuplicateScan? Run(AbsoluteDirectoryPath root)
 	{
+		string? realRoot = Deduplicator.ResolveRoot(root);
+
 		Console.WriteLine("Discovering files...");
 		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(root);
 		Console.WriteLine($"Found {files.Count} file(s).");
@@ -62,6 +73,6 @@ internal sealed class DuplicateScan
 		Dictionary<AbsoluteFilePath, string> fileHashes = FileHasher.HashPossibleDuplicates(files, out IReadOnlyList<AbsoluteFilePath> uniqueSize);
 		Console.WriteLine();
 
-		return new DuplicateScan(files, fileHashes, uniqueSize, Deduplicator.GroupByHash(fileHashes));
+		return new DuplicateScan(files, fileHashes, uniqueSize, Deduplicator.GroupByHash(fileHashes), realRoot);
 	}
 }
