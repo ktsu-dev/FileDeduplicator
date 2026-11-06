@@ -46,6 +46,74 @@ public sealed class ScannedRootContainmentTests
 	}
 
 	/// <summary>
+	/// The kept copy's directory replaced by a link to a folder outside the root, holding an
+	/// identical file, must not let the other copies go: the scanned folder would be left with none
+	/// (ktsu-dev/FileDeduplicator#206).
+	/// </summary>
+	[TestMethod]
+	public void AKeeperWhoseDirectoryIsSwappedForALinkOutsideTheRootKeepsTheWholeGroup()
+	{
+		// Arrange -- sub/a.cfg is kept (shortest name), settings.cfg is up for deletion
+		using TempTree tree = new();
+		using TempTree outside = new();
+		AbsoluteFilePath keeper = tree.Write("sub/a.cfg", "important config v1");
+		AbsoluteFilePath copy = tree.Write("settings.cfg", "important config v1");
+		AbsoluteFilePath outsideFile = outside.Write("a.cfg", "important config v1");
+		IReadOnlyList<DuplicateGroup> duplicates = Deduplicator.FindDuplicates(Deduplicator.GroupByHash(FileHasher.HashFiles([keeper, copy])));
+		string? realRoot = Deduplicator.ResolveRoot(tree.Root);
+
+		// Arrange -- while the prompt is open, sub/ becomes a link to the outside folder
+		string sub = Path.Combine(tree.Root.WeakString, "sub");
+		Directory.Delete(sub, recursive: true);
+		CreateDirectoryLinkOrSkip(sub, outside.Root.WeakString);
+
+		// Act
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, realRoot);
+
+		// Assert
+		Assert.IsTrue(TempTree.Exists(copy), "The only copy left inside the scanned folder was deleted.");
+		Assert.IsTrue(TempTree.Exists(outsideFile), "A file outside the scanned folder must never be deleted.");
+		Assert.AreEqual(0, result.DeletedCount);
+		Assert.ContainsSingle(result.SkippedFiles);
+		Assert.AreEqual(copy, result.SkippedFiles[0].Path);
+		Assert.Contains("copy being kept", result.SkippedFiles[0].Reason);
+		Assert.Contains("scanned folder", result.SkippedFiles[0].Reason);
+	}
+
+	/// <summary>
+	/// The root itself replaced by a link to a sibling folder after the scan must not send the
+	/// deletes into that sibling, which was never scanned or listed (ktsu-dev/FileDeduplicator#206).
+	/// </summary>
+	[TestMethod]
+	public void ARootSwappedForALinkAfterTheScanDeletesNothing()
+	{
+		// Arrange -- parent/photos is scanned; parent/backup holds the same names and content
+		using TempTree parent = new();
+		AbsoluteFilePath keeper = parent.Write("photos/a.jpg", "pixels");
+		AbsoluteFilePath copy = parent.Write("photos/longer.jpg", "pixels");
+		AbsoluteFilePath backupKeeper = parent.Write("backup/a.jpg", "pixels");
+		AbsoluteFilePath backupCopy = parent.Write("backup/longer.jpg", "pixels");
+		string photos = Path.Combine(parent.Root.WeakString, "photos");
+		AbsoluteDirectoryPath root = photos.As<AbsoluteDirectoryPath>();
+		IReadOnlyList<DuplicateGroup> duplicates = Deduplicator.FindDuplicates(Deduplicator.GroupByHash(FileHasher.HashFiles([keeper, copy])));
+		string? realRoot = Deduplicator.ResolveRoot(root);
+
+		// Arrange -- while the prompt is open, photos is moved aside and replaced by a link to backup
+		Directory.Move(photos, Path.Combine(parent.Root.WeakString, "photos-moved"));
+		CreateDirectoryLinkOrSkip(photos, Path.Combine(parent.Root.WeakString, "backup"));
+
+		// Act
+		DeduplicationResult result = Deduplicator.DeleteDuplicates(duplicates, realRoot);
+
+		// Assert
+		Assert.IsTrue(TempTree.Exists(backupCopy), "A file in a folder that was never scanned was deleted.");
+		Assert.IsTrue(TempTree.Exists(backupKeeper));
+		Assert.AreEqual(0, result.DeletedCount);
+		Assert.ContainsSingle(result.SkippedFiles);
+		Assert.Contains("scanned folder", result.SkippedFiles[0].Reason);
+	}
+
+	/// <summary>
 	/// The root itself may be reached through a link, as when a user passes a symlinked home
 	/// folder. That alone must not stop copies under it from being deleted.
 	/// </summary>
