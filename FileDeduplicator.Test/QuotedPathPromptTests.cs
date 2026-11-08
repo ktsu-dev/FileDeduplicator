@@ -88,23 +88,23 @@ public sealed class QuotedPathPromptTests
 		using TempTree tree = new();
 		_ = tree.Write("home/Pictures/a.txt", "alpha");
 		_ = tree.Write("home/Pictures/aa.txt", "alpha");
-		string variable = OperatingSystem.IsWindows() ? "USERPROFILE" : "HOME";
-		string? previous = Environment.GetEnvironmentVariable(variable);
-		Environment.SetEnvironmentVariable(variable, Path.Combine(tree.Root.WeakString, "home"));
+		string home = Path.Combine(tree.Root.WeakString, "home");
+		Func<string> previous = BaseVerb.UserProfile;
+		BaseVerb.UserProfile = () => home;
 		try
 		{
 			// Act
 			string output = ConsoleCapture.Run(new Scan(), string.Format(System.Globalization.CultureInfo.InvariantCulture, format, "Pictures") + "\n", out int exitCode);
 
 			// Assert
-			Assert.Contains($"Scanning: {Path.Combine(tree.Root.WeakString, "home", "Pictures")}", output);
+			Assert.Contains($"Scanning: {Path.Combine(home, "Pictures")}", output);
 			Assert.DoesNotContain("Directory not found", output);
 			Assert.Contains("Found 1 group(s) of duplicate files", output);
 			Assert.AreEqual(0, exitCode);
 		}
 		finally
 		{
-			Environment.SetEnvironmentVariable(variable, previous);
+			BaseVerb.UserProfile = previous;
 		}
 	}
 }

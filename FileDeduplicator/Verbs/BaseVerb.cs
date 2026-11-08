@@ -78,7 +78,7 @@ internal abstract class BaseVerb : ICommand
 		Console.Write($"Enter the path to {action}: ");
 		string input = ExpandHome(
 			Unquote(Console.ReadLine()?.Trim() ?? string.Empty),
-			Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+			UserProfile());
 		if (string.IsNullOrWhiteSpace(input))
 		{
 			Console.WriteLine("No path provided. Aborting.");
@@ -99,6 +99,14 @@ internal abstract class BaseVerb : ICommand
 		input.Length >= 2 && (input[0] == '"' || input[0] == '\'') && input[^1] == input[0]
 			? input[1..^1].Trim()
 			: input;
+
+	/// <summary>
+	/// Gets or sets how the user's profile directory, which a leading <c>~</c> at the prompt expands to,
+	/// is found. Tests replace it, because on Windows the profile folder does not follow
+	/// <c>USERPROFILE</c>.
+	/// </summary>
+	internal static Func<string> UserProfile { get; set; } =
+		() => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
 	/// <summary>
 	/// Replaces a leading <c>~</c> in <paramref name="input"/> with <paramref name="home"/>, as a shell
