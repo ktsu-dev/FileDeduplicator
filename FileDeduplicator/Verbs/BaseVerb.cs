@@ -61,6 +61,10 @@ internal abstract class BaseVerb : ICommand
 	/// A pasted path usually arrives in quotes: Explorer's Copy as path always adds them, and dragging a
 	/// folder with a space into a terminal does too. Left in, they make <see cref="Path"/> resolve the
 	/// quoted text as a relative name under the current directory, so one matching pair is removed.
+	/// <para>
+	/// The shell expands <c>~</c> in a <c>-p</c> argument, but nothing does at the prompt, so a leading
+	/// <c>~</c> is expanded here (ktsu-dev/FileDeduplicator#212).
+	/// </para>
 	/// </remarks>
 	/// <param name="action">What the verb does with the path, as in "Enter the path to scan".</param>
 	/// <returns><see langword="false"/> when the user gave no path and the verb should abort.</returns>
@@ -72,7 +76,9 @@ internal abstract class BaseVerb : ICommand
 		}
 
 		Console.Write($"Enter the path to {action}: ");
-		string input = Unquote(Console.ReadLine()?.Trim() ?? string.Empty);
+		string input = ExpandHome(
+			Unquote(Console.ReadLine()?.Trim() ?? string.Empty),
+			Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
 		if (string.IsNullOrWhiteSpace(input))
 		{
 			Console.WriteLine("No path provided. Aborting.");
@@ -93,6 +99,35 @@ internal abstract class BaseVerb : ICommand
 		input.Length >= 2 && (input[0] == '"' || input[0] == '\'') && input[^1] == input[0]
 			? input[1..^1].Trim()
 			: input;
+
+	/// <summary>
+	/// Replaces a leading <c>~</c> in <paramref name="input"/> with <paramref name="home"/>, as a shell
+	/// would.
+	/// </summary>
+	/// <remarks>
+	/// Only <c>~</c> alone, or followed by <c>/</c> or <c>\</c>, is expanded. <c>~user</c> and a
+	/// <c>~</c> anywhere else are left alone, and a folder literally named <c>~</c> is still reached
+	/// as <c>./~</c>.
+	/// </remarks>
+	/// <param name="input">The unquoted answer to the path prompt.</param>
+	/// <param name="home">The user's profile directory.</param>
+	/// <returns>The answer with its leading <c>~</c> expanded, or unchanged.</returns>
+	internal static string ExpandHome(string input, string home)
+	{
+		if (string.IsNullOrEmpty(home) || input.Length == 0 || input[0] != '~')
+		{
+			return input;
+		}
+
+		if (input.Length == 1)
+		{
+			return home;
+		}
+
+		return input[1] is '/' or '\\'
+			? System.IO.Path.Join(home, input[2..])
+			: input;
+	}
 
 	public void Execute() => _ = Run();
 }
