@@ -53,10 +53,9 @@ internal static class FileScanner
 	/// name, ignoring case, so a file whose path merely contains ".git" is still scanned, and so is a
 	/// <c>.git</c> <em>file</em> (the pointer a worktree or submodule leaves), which is not a directory.
 	/// <para>
-	/// <c>CVS</c> is here because every directory of a CVS checkout holds a <c>CVS</c> folder whose
-	/// <c>Root</c> and <c>Repository</c> files are identical across the whole checkout. A bare git
-	/// repository can have any name, so it is recognised by its structure instead, in
-	/// <see cref="IsGitDirectory"/>.
+	/// A bare git repository can have any name, so it is recognised by its structure instead, in
+	/// <see cref="IsGitDirectory"/>. <c>CVS</c> and <c>_darcs</c> are in
+	/// <see cref="CaseSensitiveVersionControlDirectories"/>.
 	/// </para>
 	/// </remarks>
 	private static readonly HashSet<string> VersionControlDirectories = new(StringComparer.OrdinalIgnoreCase)
@@ -65,9 +64,31 @@ internal static class FileScanner
 		".svn",
 		".hg",
 		".bzr",
+	};
+
+	/// <summary>
+	/// Version-control metadata directories whose tools always write the name in one exact case.
+	/// </summary>
+	/// <remarks>
+	/// Every directory of a CVS checkout holds a <c>CVS</c> folder whose <c>Root</c> and
+	/// <c>Repository</c> files are identical across the whole checkout, and darcs keeps its
+	/// repository in <c>_darcs</c>. Neither tool writes any other spelling, and these names, unlike
+	/// the dot-prefixed ones above, are ordinary words: a user's own <c>cvs</c> folder of pharmacy
+	/// receipts, or a <c>Cvs</c> or <c>_DARCS</c> folder, is scanned (ktsu-dev/FileDeduplicator#211).
+	/// </remarks>
+	private static readonly HashSet<string> CaseSensitiveVersionControlDirectories = new(StringComparer.Ordinal)
+	{
 		"CVS",
 		"_darcs",
 	};
+
+	/// <summary>
+	/// Whether a directory with the name <paramref name="name"/> holds version-control metadata by name.
+	/// </summary>
+	/// <param name="name">The directory's own name, not its path.</param>
+	/// <returns><see langword="true"/> when the directory is skipped by name.</returns>
+	internal static bool IsVersionControlDirectoryName(string name) =>
+		VersionControlDirectories.Contains(name) || CaseSensitiveVersionControlDirectories.Contains(name);
 
 	/// <summary>
 	/// Whether <paramref name="directory"/> is a git directory by structure: a <c>HEAD</c> file next
@@ -126,7 +147,7 @@ internal static class FileScanner
 		{
 			ShouldIncludePredicate = (ref entry) => !entry.IsDirectory,
 			ShouldRecursePredicate = (ref entry) =>
-				!VersionControlDirectories.Contains(entry.FileName.ToString()) && !IsGitDirectory(entry.ToFullPath()),
+				!IsVersionControlDirectoryName(entry.FileName.ToString()) && !IsGitDirectory(entry.ToFullPath()),
 		};
 
 		List<AbsoluteFilePath> files = [];
