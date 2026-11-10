@@ -64,6 +64,49 @@ public sealed class VersionControlMetadataTests
 	}
 
 	[TestMethod]
+	[DataRow("cvs")]
+	[DataRow("Cvs")]
+	[DataRow("cVS")]
+	[DataRow("_DARCS")]
+	[DataRow("_Darcs")]
+	public void TheScanReadsAUserFolderNamedLikeCvsOrDarcsInAnotherCase(string folder)
+	{
+		// Arrange -- CVS only ever writes "CVS" and darcs only "_darcs" (ktsu-dev/FileDeduplicator#211)
+		using TempTree tree = new();
+		AbsoluteFilePath[] expected =
+		[
+			tree.Write($"receipts/{folder}/r1.pdf", "receipt"),
+			tree.Write($"receipts/{folder}/r1-copy.pdf", "receipt"),
+			tree.Write("receipts/Walgreens/x.pdf", "receipt"),
+		];
+
+		// Act
+		IReadOnlyList<AbsoluteFilePath> files = FileScanner.ScanForFiles(tree.Root);
+
+		// Assert
+		CollectionAssert.AreEquivalent(expected, files.ToArray());
+	}
+
+	[TestMethod]
+	public void ScanReportsTheCopiesInALowercaseCvsFolder()
+	{
+		// Arrange -- the reproduction from ktsu-dev/FileDeduplicator#211
+		using TempTree tree = new();
+		AbsoluteFilePath first = tree.Write("receipts/cvs/r1.pdf", "receipt");
+		AbsoluteFilePath second = tree.Write("receipts/cvs/r1-copy.pdf", "receipt");
+		AbsoluteFilePath third = tree.Write("receipts/Walgreens/x.pdf", "receipt");
+
+		// Act
+		string output = ConsoleCapture.Normalize(ConsoleCapture.Run(new Scan { PathString = tree.Root.WeakString }, string.Empty));
+
+		// Assert
+		Assert.Contains("Found 3 file(s).", output, $"Scan did not find every file. Output was:\n{output}");
+		Assert.Contains(first.WeakString, output, $"Scan missed a copy in cvs/. Output was:\n{output}");
+		Assert.Contains(second.WeakString, output, $"Scan missed a copy in cvs/. Output was:\n{output}");
+		Assert.Contains(third.WeakString, output, $"Scan missed the copy outside cvs/. Output was:\n{output}");
+	}
+
+	[TestMethod]
 	[DataRow("srv/project.git")]
 	[DataRow("mirror")]
 	[DataRow(".cfg")]
