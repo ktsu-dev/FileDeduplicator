@@ -65,4 +65,46 @@ public sealed class QuotedPathPromptTests
 		Assert.Contains("No path provided. Aborting.", output);
 		Assert.AreEqual(1, exitCode);
 	}
+
+	[TestMethod]
+	[DataRow("~", "/home/u")]
+	[DataRow("~/x", "/home/u/x")]
+	[DataRow("~/", "/home/u")]
+	[DataRow("~\\x", "/home/u/x")]
+	[DataRow("./~", "./~")]
+	[DataRow("~user/x", "~user/x")]
+	[DataRow("a/~/x", "a/~/x")]
+	[DataRow("/plain", "/plain")]
+	[DataRow("", "")]
+	public void ExpandHomeReplacesOnlyALeadingTilde(string input, string expected) =>
+		Assert.AreEqual(expected, BaseVerb.ExpandHome(input, "/home/u").Replace('\\', '/'));
+
+	[TestMethod]
+	[DataRow("~/{0}")]
+	[DataRow("\"~/{0}\"")]
+	public void ScanResolvesATildePathUnderTheUserProfile(string format)
+	{
+		// Arrange -- the reproduction from ktsu-dev/FileDeduplicator#212
+		using TempTree tree = new();
+		_ = tree.Write("home/Pictures/a.txt", "alpha");
+		_ = tree.Write("home/Pictures/aa.txt", "alpha");
+		string home = Path.Combine(tree.Root.WeakString, "home");
+		Func<string> previous = BaseVerb.UserProfile;
+		BaseVerb.UserProfile = () => home;
+		try
+		{
+			// Act
+			string output = ConsoleCapture.Run(new Scan(), string.Format(System.Globalization.CultureInfo.InvariantCulture, format, "Pictures") + "\n", out int exitCode);
+
+			// Assert
+			Assert.Contains($"Scanning: {Path.Combine(home, "Pictures")}", output);
+			Assert.DoesNotContain("Directory not found", output);
+			Assert.Contains("Found 1 group(s) of duplicate files", output);
+			Assert.AreEqual(0, exitCode);
+		}
+		finally
+		{
+			BaseVerb.UserProfile = previous;
+		}
+	}
 }
