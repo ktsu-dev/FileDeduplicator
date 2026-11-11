@@ -150,6 +150,11 @@ internal static class FileScanner
 	/// deleted branch refs that happened to point at the same commit
 	/// (ktsu-dev/FileDeduplicator#207). A working tree that only <em>contains</em> <c>.git</c> is
 	/// not matched, because neither it nor its ancestors are metadata.
+	/// <para>
+	/// Names are matched by <see cref="IsVersionControlDirectoryName"/>, the same test the walk
+	/// uses, so <c>CVS</c> and <c>_darcs</c> are refused here too, and other spellings of them are
+	/// not (ktsu-dev/FileDeduplicator#215).
+	/// </para>
 	/// </remarks>
 	/// <param name="directory">The full path of the root.</param>
 	/// <returns>The metadata directory, or <see langword="null"/> when there is none.</returns>
@@ -157,7 +162,7 @@ internal static class FileScanner
 	{
 		for (DirectoryInfo? current = new(Path.TrimEndingDirectorySeparator(directory)); current is not null; current = current.Parent)
 		{
-			if (VersionControlDirectories.Contains(current.Name) || IsGitDirectory(current.FullName))
+			if (IsVersionControlDirectoryName(current.Name) || IsGitDirectory(current.FullName))
 			{
 				return current.FullName;
 			}

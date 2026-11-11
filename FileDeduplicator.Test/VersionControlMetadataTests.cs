@@ -226,6 +226,8 @@ public sealed class VersionControlMetadataTests
 	[DataRow("proj/.git/refs/heads")]
 	[DataRow("proj/.svn")]
 	[DataRow("proj/.hg/store")]
+	[DataRow("proj/CVS")]
+	[DataRow("proj/_darcs/patches")]
 	public void EveryVerbRefusesARootThatIsOrLiesInsideVersionControlMetadata(string root)
 	{
 		// Arrange -- the reproduction from ktsu-dev/FileDeduplicator#207: two branches at one commit
@@ -243,6 +245,10 @@ public sealed class VersionControlMetadataTests
 			tree.Write("proj/.svn/longer-b", BranchTip),
 			tree.Write("proj/.hg/store/a", BranchTip),
 			tree.Write("proj/.hg/store/longer-b", BranchTip),
+			tree.Write("proj/CVS/a", BranchTip),
+			tree.Write("proj/CVS/longer-b", BranchTip),
+			tree.Write("proj/_darcs/patches/a", BranchTip),
+			tree.Write("proj/_darcs/patches/longer-b", BranchTip),
 		];
 		string path = Path.Combine(tree.Root.WeakString, root.Replace('/', Path.DirectorySeparatorChar));
 
@@ -278,5 +284,24 @@ public sealed class VersionControlMetadataTests
 		// Act and assert
 		Assert.IsTrue(FileScanner.IsScannableDirectory(proj));
 		Assert.IsNull(FileScanner.FindVersionControlMetadata(proj.WeakString));
+	}
+
+	[TestMethod]
+	[DataRow("cvs")]
+	[DataRow("Cvs")]
+	[DataRow("_DARCS")]
+	public void ARootNamedLikeCaseSensitiveMetadataInAnotherCaseIsStillScanned(string name)
+	{
+		// Arrange -- CVS and _darcs are matched case-sensitively below the root
+		// (ktsu-dev/FileDeduplicator#211), so the root check must not refuse other spellings
+		// (ktsu-dev/FileDeduplicator#215)
+		ArgumentNullException.ThrowIfNull(name);
+		using TempTree tree = new();
+		_ = tree.Write($"proj/{name}/a.txt", "a real duplicate");
+		AbsoluteDirectoryPath root = Path.Combine(tree.Root.WeakString, "proj", name).As<AbsoluteDirectoryPath>();
+
+		// Act and assert
+		Assert.IsNull(FileScanner.FindVersionControlMetadata(root.WeakString));
+		Assert.IsTrue(FileScanner.IsScannableDirectory(root));
 	}
 }
