@@ -72,7 +72,7 @@ internal static class Deduplicator
 	/// <returns>The paths, with every further path to an already-listed file left out.</returns>
 	/// <remarks>
 	/// A path whose identity cannot be read is kept: it is either gone, which the sizing that follows
-	/// drops, or it cannot be inspected, and the deletion guard in <see cref="DeleteDuplicates"/>
+	/// drops, or it cannot be inspected, and the deletion guard in <see cref="DeleteDuplicates(IReadOnlyList{DuplicateGroup}, string?, Action{AbsoluteFilePath}?)"/>
 	/// still stands between it and the keeper.
 	/// </remarks>
 	internal static IEnumerable<AbsoluteFilePath> CollapseSameFile(IEnumerable<AbsoluteFilePath> paths)
@@ -136,30 +136,64 @@ internal static class Deduplicator
 	internal static bool IsDeletable(DuplicateGroup group) => group.FileSize > 0;
 
 	/// <summary>
+	/// Resolves the scanned root with every link followed, for <see cref="DeleteDuplicates(IReadOnlyList{DuplicateGroup}, string?, Action{AbsoluteFilePath}?)"/>.
+	/// </summary>
+	/// <remarks>
+	/// Called when the root is scanned, not when copies are deleted. The confirmation prompt between
+	/// the two can stay open indefinitely, and a root swapped for a link in that time would otherwise
+	/// resolve to the new place, so every path under it would still "lead inside the root" and the
+	/// run would delete in a folder that was never scanned or listed (ktsu-dev/FileDeduplicator#206).
+	/// </remarks>
+	/// <param name="root">The directory being scanned.</param>
+	/// <returns>The resolved root, or <see langword="null"/> when it could not be resolved.</returns>
+	internal static string? ResolveRoot(AbsoluteDirectoryPath root) =>
+		RealPath.TryResolve(root.WeakString, out string resolvedRoot) ? resolvedRoot : null;
+
+	/// <summary>
+	/// Deletes every copy in each deletable group except the one <see cref="SelectFileToKeep"/> keeps,
+	/// resolving <paramref name="root"/> now.
+	/// </summary>
+	/// <param name="duplicateGroups">The groups to deduplicate.</param>
+	/// <param name="root">The directory that was scanned.</param>
+	/// <param name="afterDelete">Called after each copy is deleted.</param>
+	/// <returns>What was deleted, skipped and failed.</returns>
+	internal static DeduplicationResult DeleteDuplicates(IReadOnlyList<DuplicateGroup> duplicateGroups, AbsoluteDirectoryPath root, Action<AbsoluteFilePath>? afterDelete = null) =>
+		DeleteDuplicates(duplicateGroups, ResolveRoot(root), afterDelete);
+
+	/// <summary>
 	/// Deletes every copy in each deletable group except the one <see cref="SelectFileToKeep"/> keeps.
 	/// </summary>
 	/// <param name="duplicateGroups">The groups to deduplicate.</param>
-	/// <param name="root">
-	/// The directory that was scanned. A copy whose path no longer leads inside it is not deleted.
+	/// <param name="realRoot">
+	/// The directory that was scanned, as <see cref="ResolveRoot"/> resolved it when it was scanned,
+	/// or <see langword="null"/> if it could not be. A copy whose path no longer leads inside it is
+	/// not deleted, and a group whose kept copy no longer does is left alone.
 	/// </param>
 	/// <param name="afterDelete">
 	/// Called after each copy is deleted. Production code passes nothing; tests use it to change the
 	/// filesystem between two deletions in one group.
 	/// </param>
 	/// <returns>What was deleted, skipped and failed.</returns>
-	internal static DeduplicationResult DeleteDuplicates(IReadOnlyList<DuplicateGroup> duplicateGroups, AbsoluteDirectoryPath root, Action<AbsoluteFilePath>? afterDelete = null)
+	internal static DeduplicationResult DeleteDuplicates(IReadOnlyList<DuplicateGroup> duplicateGroups, string? realRoot, Action<AbsoluteFilePath>? afterDelete = null)
 	{
 		int deletedCount = 0;
 		long bytesReclaimed = 0;
 		List<string> errors = [];
 		List<SkippedFile> skipped = [];
 
-		// Resolved now, not at scan time: the paths it is compared with are resolved now too.
-		string? realRoot = RealPath.TryResolve(root.WeakString, out string resolvedRoot) ? resolvedRoot : null;
-
 		foreach (DuplicateGroup group in duplicateGroups.Where(IsDeletable))
 		{
 			AbsoluteFilePath keeper = SelectFileToKeep(group.Files);
+
+			// The keeper is re-hashed, identified and snapshotted through its recorded path. If a
+			// directory on that path now leads outside the root, all of those read an identical file
+			// out there, every check passes, and the scanned folder is left with no copy of the
+			// content at all, so the whole group is left alone.
+			if (!LeadsInsideRoot(keeper, realRoot, out string? keeperOutsideReason))
+			{
+				SkipWholeGroup(group, keeper, keeperOutsideReason, skipped);
+				continue;
+			}
 
 			// The grouping was computed before the confirmation prompt, which is an interactive
 			// pause of unbounded length. If the copy being kept no longer holds the group's
@@ -190,6 +224,16 @@ internal static class Deduplicator
 					foreach (AbsoluteFilePath remaining in others.Skip(i))
 					{
 						Skip(remaining, $"the copy being kept ({keeper}) changed while the group was being deduplicated, so this may be the last copy of the content", skipped);
+					}
+
+					break;
+				}
+
+				if (!LeadsInsideRoot(keeper, realRoot, out string? keeperMovedReason))
+				{
+					foreach (AbsoluteFilePath remaining in others.Skip(i))
+					{
+						Skip(remaining, $"the copy being kept ({keeper}) {keeperMovedReason}, so this may be the last copy of the content in it", skipped);
 					}
 
 					break;
