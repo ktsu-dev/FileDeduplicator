@@ -4,6 +4,7 @@ namespace ktsu.FileDeduplicator.Test;
 
 using ktsu.FileDeduplicator.Verbs;
 using ktsu.Semantics.Paths;
+using ktsu.Semantics.Strings;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -214,5 +215,68 @@ public sealed class VersionControlMetadataTests
 		Assert.Contains(copy.WeakString, dryRun, $"DryRun missed the real duplicate. Output was:\n{dryRun}");
 		Assert.DoesNotContain(".git", scan, $"Scan reported a path inside .git. Output was:\n{scan}");
 		Assert.DoesNotContain(".git", dryRun, $"DryRun reported a path inside .git. Output was:\n{dryRun}");
+	}
+
+	[TestMethod]
+	[DataRow("bare")]
+	[DataRow("bare/refs")]
+	[DataRow("bare/refs/heads")]
+	[DataRow("proj/.git")]
+	[DataRow("proj/.git/refs")]
+	[DataRow("proj/.git/refs/heads")]
+	[DataRow("proj/.svn")]
+	[DataRow("proj/.hg/store")]
+	public void EveryVerbRefusesARootThatIsOrLiesInsideVersionControlMetadata(string root)
+	{
+		// Arrange -- the reproduction from ktsu-dev/FileDeduplicator#207: two branches at one commit
+		ArgumentNullException.ThrowIfNull(root);
+		using TempTree tree = new();
+		_ = tree.Write("bare/HEAD", "ref: refs/heads/main\n");
+		_ = tree.Write("bare/objects/info/packs", "\n");
+		AbsoluteFilePath[] refs =
+		[
+			tree.Write("bare/refs/heads/main", BranchTip),
+			tree.Write("bare/refs/heads/feature-long", BranchTip),
+			tree.Write("proj/.git/refs/heads/main", BranchTip),
+			tree.Write("proj/.git/refs/heads/feature-long", BranchTip),
+			tree.Write("proj/.svn/a", BranchTip),
+			tree.Write("proj/.svn/longer-b", BranchTip),
+			tree.Write("proj/.hg/store/a", BranchTip),
+			tree.Write("proj/.hg/store/longer-b", BranchTip),
+		];
+		string path = Path.Combine(tree.Root.WeakString, root.Replace('/', Path.DirectorySeparatorChar));
+
+		// Act and assert
+		foreach ((string name, BaseVerb verb, string stdin) in new (string, BaseVerb, string)[]
+		{
+			("Scan", new Scan { PathString = path }, string.Empty),
+			("DryRun", new DryRun { PathString = path }, string.Empty),
+			("Stats", new Stats { PathString = path }, string.Empty),
+			("Deduplicate", new Deduplicate { PathString = path }, "y"),
+		})
+		{
+			string output = ConsoleCapture.Normalize(ConsoleCapture.Run(verb, stdin, out int exitCode));
+			Assert.AreEqual(1, exitCode, $"{name} did not fail. Output was:\n{output}");
+			Assert.Contains("version-control metadata", output, $"{name} did not say why. Output was:\n{output}");
+			foreach (AbsoluteFilePath file in refs)
+			{
+				Assert.IsTrue(TempTree.Exists(file), $"{name} deleted {file}. Output was:\n{output}");
+			}
+		}
+	}
+
+	[TestMethod]
+	public void AWorkingTreeThatContainsGitIsStillScanned()
+	{
+		// Arrange
+		using TempTree tree = new();
+		_ = tree.Write("proj/.git/HEAD", "ref: refs/heads/main\n");
+		_ = tree.Write("proj/.git/objects/info/packs", "\n");
+		_ = tree.Write("proj/.git/refs/heads/main", BranchTip);
+		AbsoluteDirectoryPath proj = Path.Combine(tree.Root.WeakString, "proj").As<AbsoluteDirectoryPath>();
+
+		// Act and assert
+		Assert.IsTrue(FileScanner.IsScannableDirectory(proj));
+		Assert.IsNull(FileScanner.FindVersionControlMetadata(proj.WeakString));
 	}
 }

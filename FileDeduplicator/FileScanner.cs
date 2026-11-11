@@ -130,7 +130,40 @@ internal static class FileScanner
 			return false;
 		}
 
+		if (FindVersionControlMetadata(path.WeakString) is string metadata)
+		{
+			Console.WriteLine($"Not scanning {path}: it is, or lies inside, the version-control metadata directory {metadata}");
+			return false;
+		}
+
 		return true;
+	}
+
+	/// <summary>
+	/// Finds the version-control metadata directory that <paramref name="directory"/> is, or lies
+	/// inside.
+	/// </summary>
+	/// <remarks>
+	/// The walk skips <see cref="VersionControlDirectories"/> and bare repositories only below the
+	/// root, so a root that is one of them, or lies inside one, was scanned like any other folder.
+	/// Pointed at a bare repository, a <c>.git</c> directory or its <c>refs</c> folder, Deduplicate
+	/// deleted branch refs that happened to point at the same commit
+	/// (ktsu-dev/FileDeduplicator#207). A working tree that only <em>contains</em> <c>.git</c> is
+	/// not matched, because neither it nor its ancestors are metadata.
+	/// </remarks>
+	/// <param name="directory">The full path of the root.</param>
+	/// <returns>The metadata directory, or <see langword="null"/> when there is none.</returns>
+	internal static string? FindVersionControlMetadata(string directory)
+	{
+		for (DirectoryInfo? current = new(Path.TrimEndingDirectorySeparator(directory)); current is not null; current = current.Parent)
+		{
+			if (VersionControlDirectories.Contains(current.Name) || IsGitDirectory(current.FullName))
+			{
+				return current.FullName;
+			}
+		}
+
+		return null;
 	}
 
 	internal static IReadOnlyList<AbsoluteFilePath> ScanForFiles(AbsoluteDirectoryPath path)
