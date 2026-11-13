@@ -1,6 +1,6 @@
-## v1.3.24-pre.1 (prerelease)
+## v1.3.24 (patch)
 
 Changes since v1.3.23:
 
-- Bump MSTest.Sdk from 4.5.2 to 4.5.3 (dependabot[bot])
+- Refuse a root that is, or lies inside, a CVS or _darcs folder [patch] (#216) (matt-edmondson)
 
