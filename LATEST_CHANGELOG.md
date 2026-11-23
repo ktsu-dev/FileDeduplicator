@@ -1,6 +1,6 @@
-## v1.3.24 (patch)
+## v1.3.25-pre.1 (prerelease)
 
-Changes since v1.3.23:
+Changes since v1.3.24:
 
-- Refuse a root that is, or lies inside, a CVS or _darcs folder [patch] (#216) (matt-edmondson)
+- Bump Polyfill from 11.4.5 to 12.0.0 (dependabot[bot])
 
